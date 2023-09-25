@@ -132,6 +132,10 @@ fn update(c: &mut EngineContext) {
 
         main_camera_mut().center = transform.position;
     }
+
+
+    let text = format!("fps: {}", get_fps());
+    draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
 }
 
 #[derive(DeJson, Debug)]
