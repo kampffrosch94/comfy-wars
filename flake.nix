@@ -18,6 +18,7 @@
           # extra tooling
           ldtk
         ];
+        # stuff we need to run
         LD_LIBRARY_PATH = with pkgs;
           lib.makeLibraryPath [ libxkbcommon wayland libGL alsaLib ];
       };
