@@ -30,6 +30,7 @@
             pkgconfig
             udev
             alsaLib
+            ldtk
           ];
           LD_LIBRARY_PATH = libPath;
           buildInputs = with pkgs; [ openssl ];
