@@ -1,14 +1,25 @@
 # use with `nix develop`
+# this flake assumes x86_64-linux with wayland
 {
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; };
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [ cargo rustc clang pkg-config alsaLib ldtk ];
-          LD_LIBRARY_PATH = with pkgs;
-            lib.makeLibraryPath [ libxkbcommon wayland libGL alsaLib ];
-        };
-      });
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      devShells.${system}.default = pkgs.mkShell {
+        packages = with pkgs; [
+          # necessary to build
+          cargo
+          rustc
+          clang
+          pkg-config
+          alsaLib
+          # extra tooling
+          ldtk
+        ];
+        LD_LIBRARY_PATH = with pkgs;
+          lib.makeLibraryPath [ libxkbcommon wayland libGL alsaLib ];
+      };
+    };
 }
