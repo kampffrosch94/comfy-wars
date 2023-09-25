@@ -388,8 +388,9 @@ dependencies = [
 
 [[package]]
 name = "comfy"
-version = "0.1.0"
-source = "git+https://github.com/darthdeus/comfy#5974b7c32ac614db18514071b54d176ec4282056"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56e41148440e3d35f2ac7243b41e2fdc535bd9000371f14c0bf5604f0f3b5978"
 dependencies = [
  "comfy-core",
  "comfy-wgpu",
@@ -408,8 +409,9 @@ dependencies = [
 
 [[package]]
 name = "comfy-core"
-version = "0.1.0"
-source = "git+https://github.com/darthdeus/comfy#5974b7c32ac614db18514071b54d176ec4282056"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f77f930234956a29186c553704db24e18eebfd45fa3be5dded27d7d8bd012dc6"
 dependencies = [
  "anyhow",
  "anymap",
@@ -489,8 +491,9 @@ dependencies = [
 
 [[package]]
 name = "comfy-wgpu"
-version = "0.1.0"
-source = "git+https://github.com/darthdeus/comfy#5974b7c32ac614db18514071b54d176ec4282056"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d602afec35a6bb36c2cf2e00f1d41b442d95dc53fba177f2d358010e8c40f08f"
 dependencies = [
  "bytemuck",
  "comfy-core",

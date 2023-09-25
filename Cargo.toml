@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 #comfy = {path = "/tmp/comfy/comfy"}
-comfy = {git = "https://github.com/darthdeus/comfy"}
+#comfy = {git = "https://github.com/darthdeus/comfy"}
+comfy = "0.1.1"

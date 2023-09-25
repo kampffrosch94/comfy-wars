@@ -3,53 +3,89 @@ use comfy::*;
 simple_game!("comfy wars", setup, update);
 
 struct Player;
-struct Grass;
+struct Ground;
+struct Infrastructure;
 
 fn setup(c: &mut EngineContext) {
-    // Load the grass texture
+    let ldtk = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets/comfy_wars.ldtk"
+    ));
+    let ldtk: LDTK = DeJson::deserialize_json(ldtk).unwrap();
+    dbg!(&ldtk);
+
     c.load_texture_from_bytes(
-        "grass",
+        "tilemap",
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/assets/tiles/grass.png"
+            "/assets/tilemap/tilemap_packed.png"
         )),
     );
 
     // Load the player texture
     c.load_texture_from_bytes(
         "player",
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/assets/tiles/guy.png"
-        )),
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/tiles/guy.png")),
     );
 
-    for x in 0..50 {
-        for y in 0..50 {
-            let variant = random_i32(0, 2);
-            // Tile the world with random variant of grass sprite
-            c.commands().spawn((
-                Sprite::new("grass".to_string(), vec2(1.0, 1.0), 0, WHITE)
-                    .with_rect(32 * variant, 0, 32, 32),
-                Transform::position(vec2(x as f32, y as f32)),
-                Grass,
-            ));
-        }
+
+    const GRIDSIZE: i32 = 16;
+    for tile in ldtk
+        .levels
+        .iter()
+        .flat_map(|level| level.layers.iter())
+        .filter(|layer| layer.id == "groundgrid")
+        .flat_map(|layer| layer.auto_tiles.iter())
+    {
+        c.commands().spawn((
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 0, WHITE).with_rect(
+                tile.src[0],
+                tile.src[1],
+                GRIDSIZE,
+                GRIDSIZE,
+            ),
+            Transform::position(vec2(tile.px[0]/GRIDSIZE as f32, -tile.px[1]/GRIDSIZE as f32 )),
+            Ground,
+        ));
+    }
+
+    for tile in ldtk
+        .levels
+        .iter()
+        .flat_map(|level| level.layers.iter())
+        .filter(|layer| layer.id == "infrastructuregrid")
+        .flat_map(|layer| layer.auto_tiles.iter())
+    {
+        c.commands().spawn((
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 1, WHITE).with_rect(
+                tile.src[0],
+                tile.src[1],
+                GRIDSIZE,
+                GRIDSIZE,
+            ),
+            Transform::position(vec2(tile.px[0]/GRIDSIZE as f32, -tile.px[1]/GRIDSIZE as f32 )),
+            Infrastructure,
+        ));
     }
 
     // Spawn the player entity and make sure z-index is above the grass
     c.commands().spawn((
-        Transform::position(vec2(25.0, 25.0)),
+        Transform::position(vec2(0.0, 0.0)),
         Player,
         AnimatedSpriteBuilder::new()
             .z_index(10)
-            .add_animation("idle", 0.1, true, AnimationSource::Atlas {
-                name: "player".into(),
-                offset: ivec2(0, 0),
-                step: ivec2(16, 0),
-                size: isplat(16),
-                frames: 1,
-            })
+            .add_animation(
+                "idle",
+                0.1,
+                true,
+                AnimationSource::Atlas {
+                    name: "player".into(),
+                    offset: ivec2(0, 0),
+                    step: ivec2(16, 0),
+                    size: isplat(16),
+                    frames: 1,
+                },
+            )
             .build(),
     ));
 }
@@ -66,7 +102,7 @@ fn update(c: &mut EngineContext) {
     {
         // Handle movement and animation
         let mut moved = false;
-        let speed = 3.0;
+        let speed = 8.0;
         let mut move_dir = Vec2::ZERO;
 
         if is_key_down(KeyCode::W) {
@@ -96,4 +132,31 @@ fn update(c: &mut EngineContext) {
 
         main_camera_mut().center = transform.position;
     }
+}
+
+#[derive(DeJson, Debug)]
+struct LDTK {
+    levels: Vec<Level>,
+}
+
+#[derive(DeJson, Debug)]
+struct Level {
+    #[nserde(rename = "layerInstances")]
+    layers: Vec<Layer>,
+}
+
+#[derive(DeJson, Debug)]
+struct Layer {
+    #[nserde(rename = "__identifier")]
+    id: String,
+    #[nserde(rename = "intGridCsv")]
+    int_grid: Vec<i64>,
+    #[nserde(rename = "autoLayerTiles")]
+    auto_tiles: Vec<AutoTile>,
+}
+
+#[derive(DeJson, Debug)]
+struct AutoTile {
+    px: [f32; 2],
+    src: [i32; 2],
 }
