@@ -12,7 +12,7 @@ fn setup(c: &mut EngineContext) {
         "/assets/comfy_wars.ldtk"
     ));
     let ldtk: LDTK = DeJson::deserialize_json(ldtk).unwrap();
-    dbg!(&ldtk);
+    // dbg!(&ldtk);
 
     c.load_texture_from_bytes(
         "tilemap",

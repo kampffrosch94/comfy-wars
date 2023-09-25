@@ -9,6 +9,7 @@ edition = "2021"
 #comfy = {path = "/tmp/comfy/comfy"}
 #comfy = {git = "https://github.com/darthdeus/comfy"}
 comfy = "0.1.1"
+winit = {version = "*", features = ["wayland"]}
 
 [profile.dev]
 opt-level = 1

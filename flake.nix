@@ -6,10 +6,6 @@
       let pkgs = nixpkgs.legacyPackages.${system};
         libPath = with pkgs; lib.makeLibraryPath [
           libxkbcommon
-          xorg.libX11
-          xorg.libXcursor
-          xorg.libXi
-          xorg.libXrandr
           wayland
           libGL
           alsaLib
@@ -21,12 +17,6 @@
             rustc
             clang
             pkg-config
-            cargo-limit
-            xorg.libX11
-            xorg.libXext
-            xorg.libXcursor
-            xorg.libXrandr
-            xorg.libXi
             pkgconfig
             udev
             alsaLib
