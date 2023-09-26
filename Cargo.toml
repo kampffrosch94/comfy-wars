@@ -6,10 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-comfy = { git = "https://github.com/darthdeus/comfy", features = ["dev"]}
+comfy = { git = "https://github.com/darthdeus/comfy"}
 nanoserde = "0.1.35"
 #comfy = { version = "0.1.1", features = ["tracy"] }
 winit = {version = "*", features = ["wayland"]}
+
+[features]
+fps = []
 
 [profile.dev]
 opt-level = 1

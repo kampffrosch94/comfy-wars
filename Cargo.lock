@@ -398,7 +398,7 @@ dependencies = [
 [[package]]
 name = "comfy"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#64d7f6b532ad3f73ccc6992c49442d093adfd854"
+source = "git+https://github.com/darthdeus/comfy#bf6f2f054cd77c90625862acc61d92d4949e0faa"
 dependencies = [
  "comfy-core",
  "comfy-wgpu",
@@ -418,7 +418,7 @@ dependencies = [
 [[package]]
 name = "comfy-core"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#64d7f6b532ad3f73ccc6992c49442d093adfd854"
+source = "git+https://github.com/darthdeus/comfy#bf6f2f054cd77c90625862acc61d92d4949e0faa"
 dependencies = [
  "anymap",
  "atomic_refcell",
@@ -496,7 +496,7 @@ dependencies = [
 [[package]]
 name = "comfy-wgpu"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#64d7f6b532ad3f73ccc6992c49442d093adfd854"
+source = "git+https://github.com/darthdeus/comfy#bf6f2f054cd77c90625862acc61d92d4949e0faa"
 dependencies = [
  "bytemuck",
  "comfy-core",
