@@ -12,7 +12,7 @@
           # necessary to build
           cargo
           rustc
-          clang
+          #clang
           pkg-config # locate C dependencies
           alsaLib # sound
 

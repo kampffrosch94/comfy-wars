@@ -131,7 +131,7 @@ fn update(c: &mut EngineContext) {
 
         if moved {
             animated_sprite.flip_x = move_dir.x < 0.0;
-            transform.position += dbg!(move_dir.normalize_or_zero()) * dbg!(speed) * dbg!(dt);
+            transform.position += move_dir.normalize_or_zero() * speed * dt;
             assert!(!transform.position.is_nan());
             animated_sprite.play("walk");
         } else {
@@ -139,7 +139,7 @@ fn update(c: &mut EngineContext) {
         }
 
         main_camera_mut().center = transform.position;
-        println!("Still trying to draw. {}", main_camera().center);
+        //println!("Still trying to draw. {}", main_camera().center);
     }
 
     let text = format!("fps: {}", get_fps());
