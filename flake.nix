@@ -13,14 +13,21 @@
           cargo
           rustc
           clang
-          pkg-config
-          alsaLib
+          pkg-config # locate C dependencies
+          alsaLib # sound
+
           # extra tooling
-          ldtk
+          ldtk # level editor
+          tracy # profiler, call with ~Tracy~
         ];
         # stuff we need to run
         LD_LIBRARY_PATH = with pkgs;
-          lib.makeLibraryPath [ libxkbcommon wayland libGL alsaLib ];
+          lib.makeLibraryPath [
+            libxkbcommon # keyboard
+            wayland
+            libGL # OpenGL I think
+            alsaLib # sound
+          ];
       };
     };
 }
