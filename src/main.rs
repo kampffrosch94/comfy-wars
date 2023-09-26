@@ -28,7 +28,6 @@ fn setup(c: &mut EngineContext) {
         include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/tiles/guy.png")),
     );
 
-
     const GRIDSIZE: i32 = 16;
     for tile in ldtk
         .levels
@@ -44,7 +43,10 @@ fn setup(c: &mut EngineContext) {
                 GRIDSIZE,
                 GRIDSIZE,
             ),
-            Transform::position(vec2(tile.px[0]/GRIDSIZE as f32, -tile.px[1]/GRIDSIZE as f32 )),
+            Transform::position(vec2(
+                tile.px[0] / GRIDSIZE as f32,
+                -tile.px[1] / GRIDSIZE as f32,
+            )),
             Ground,
         ));
     }
@@ -63,7 +65,10 @@ fn setup(c: &mut EngineContext) {
                 GRIDSIZE,
                 GRIDSIZE,
             ),
-            Transform::position(vec2(tile.px[0]/GRIDSIZE as f32, -tile.px[1]/GRIDSIZE as f32 )),
+            Transform::position(vec2(
+                tile.px[0] / GRIDSIZE as f32,
+                -tile.px[1] / GRIDSIZE as f32,
+            )),
             Infrastructure,
         ));
     }
@@ -91,6 +96,8 @@ fn setup(c: &mut EngineContext) {
 }
 
 fn update(c: &mut EngineContext) {
+    span_with_timing!("kf/update");
+    let _span = span!("renderer update");
     clear_background(TEAL);
 
     let dt = c.delta;
@@ -124,15 +131,16 @@ fn update(c: &mut EngineContext) {
 
         if moved {
             animated_sprite.flip_x = move_dir.x < 0.0;
-            transform.position += move_dir.normalize() * speed * dt;
+            transform.position += dbg!(move_dir.normalize_or_zero()) * dbg!(speed) * dbg!(dt);
+            assert!(!transform.position.is_nan());
             animated_sprite.play("walk");
         } else {
             animated_sprite.play("idle");
         }
 
         main_camera_mut().center = transform.position;
+        println!("Still trying to draw. {}", main_camera().center);
     }
-
 
     let text = format!("fps: {}", get_fps());
     draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
