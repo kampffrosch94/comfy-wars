@@ -19,6 +19,7 @@
           # extra tooling
           ldtk # level editor
           tracy # profiler, call with ~Tracy~
+          cargo-flamegraph # more profiling :)
         ];
         # stuff we need to run
         LD_LIBRARY_PATH = with pkgs;
