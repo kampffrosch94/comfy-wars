@@ -1,4 +1,5 @@
 use comfy::*;
+use nanoserde::*;
 
 simple_game!("comfy wars", setup, update);
 
@@ -7,6 +8,8 @@ struct Ground;
 struct Infrastructure;
 
 fn setup(c: &mut EngineContext) {
+    c.config.borrow_mut().dev.show_fps = true;
+
     let ldtk = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/assets/comfy_wars.ldtk"
