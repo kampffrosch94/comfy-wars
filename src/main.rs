@@ -7,16 +7,21 @@ simple_game!("comfy wars", GameState, setup, update);
 struct Player;
 struct Ground;
 struct Infrastructure;
+struct Unit;
 
-
-pub struct GameState;
+#[derive(Debug, Default)]
+pub struct GameState {
+    right_click_menu_pos: Option<Vec2>,
+    sprites: HashMap<String, SpriteData>,
+}
 
 impl GameState {
     pub fn new(_c: &mut EngineContext) -> Self {
-        Self {  }
+        Self::default()
     }
 }
 
+const GRIDSIZE: i32 = 16;
 
 fn setup(s: &mut GameState, c: &mut EngineContext) {
     // can be turned on by hitting F8
@@ -39,10 +44,8 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
 
     // load sprites
     let sprites_str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/sprites.json"));
-    let sprites: HashMap<String, SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
-    dbg!(&sprites);
+    s.sprites = DeJson::deserialize_json(sprites_str).unwrap();
 
-    const GRIDSIZE: i32 = 16;
     for tile in ldtk
         .levels
         .iter()
@@ -92,8 +95,8 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         Transform::position(vec2(0.0, 0.0)),
         Player,
         Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE).with_rect(
-            sprites["blue_tank"].x,
-            sprites["blue_tank"].y,
+            s.sprites["blue_tank"].x,
+            s.sprites["blue_tank"].y,
             GRIDSIZE,
             GRIDSIZE,
         ),
@@ -153,14 +156,35 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         color: epaint::Color32::BLACK,
     };
     c.egui.set_visuals(visuals);
-    let mouse = mouse_screen();
-    egui::Area::new("my_area")
-        .fixed_pos(egui::pos2(mouse.x, mouse.y))
-        .show(c.egui, |ui| {
-            egui::Frame::none().fill(egui::Color32::RED).show(ui, |ui| {
-                ui.label(RichText::new("Red text").color(Color32::BLACK));
+
+    if is_mouse_button_down(MouseButton::Right) {
+        s.right_click_menu_pos = Some(mouse_world());
+    }
+    if is_mouse_button_down(MouseButton::Left) {
+        s.right_click_menu_pos = None;
+    }
+
+    if let Some(wpos) = s.right_click_menu_pos {
+        let pos = world_to_screen(wpos);
+        egui::Area::new("context_menu")
+            .fixed_pos(egui::pos2(pos.x, pos.y))
+            .show(c.egui, |ui| {
+                egui::Frame::none()
+                    .fill(egui::Color32::BLACK)
+                    .show(ui, |ui| {
+                        for (name, sprite) in s.sprites.iter().sorted_by_key(|s| s.0) {
+                            if ui.button(name).clicked() {
+                                c.commands().spawn((
+                                    Unit,
+                                    Transform::position(wpos),
+                                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE)
+                                        .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
+                                ));
+                            }
+                        }
+                    });
             });
-        });
+    }
 
     let text = format!("fps: {}", get_fps());
     draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
