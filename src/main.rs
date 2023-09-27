@@ -1,17 +1,26 @@
-use comfy::*;
+use comfy::{egui::RichText, epaint::Color32, *};
 use nanoserde::*;
 
-simple_game!("comfy wars", setup, update);
+simple_game!("comfy wars", GameState, setup, update);
 
+// ECS markers
 struct Player;
 struct Ground;
 struct Infrastructure;
 
-fn setup(c: &mut EngineContext) {
+
+pub struct GameState;
+
+impl GameState {
+    pub fn new(_c: &mut EngineContext) -> Self {
+        Self {  }
+    }
+}
+
+
+fn setup(s: &mut GameState, c: &mut EngineContext) {
     // can be turned on by hitting F8
     c.config.borrow_mut().dev.show_fps = false;
-
-
 
     // load tiles
     let ldtk = include_str!(concat!(
@@ -29,13 +38,9 @@ fn setup(c: &mut EngineContext) {
     );
 
     // load sprites
-    let sprites_str = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/assets/sprites.json"
-    ));
+    let sprites_str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/sprites.json"));
     let sprites: HashMap<String, SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
     dbg!(&sprites);
-
 
     const GRIDSIZE: i32 = 16;
     for tile in ldtk
@@ -93,11 +98,9 @@ fn setup(c: &mut EngineContext) {
             GRIDSIZE,
         ),
     ));
-
-
 }
 
-fn update(c: &mut EngineContext) {
+fn update(s: &mut GameState, c: &mut EngineContext) {
     span_with_timing!("kf/update");
     let _span = span!("renderer update");
     clear_background(TEAL);
@@ -140,17 +143,30 @@ fn update(c: &mut EngineContext) {
         //println!("Still trying to draw. {}", main_camera().center);
     }
 
+    let mut visuals = egui::Visuals::dark();
+    visuals.window_shadow = epaint::Shadow {
+        extrusion: 0.,
+        color: epaint::Color32::BLACK,
+    };
+    c.egui.set_visuals(visuals);
+    let mouse = mouse_screen();
+    egui::Area::new("my_area")
+        .fixed_pos(egui::pos2(mouse.x, mouse.y))
+        .show(c.egui, |ui| {
+            egui::Frame::none().fill(egui::Color32::RED).show(ui, |ui| {
+                ui.label(RichText::new("Red text").color(Color32::BLACK));
+            });
+        });
+
     let text = format!("fps: {}", get_fps());
     draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
 }
 
 #[derive(DeJson, Debug)]
 struct SpriteData {
-    id: String,
     x: i32,
     y: i32,
 }
-
 
 #[derive(DeJson, Debug)]
 struct LDTK {
@@ -167,8 +183,8 @@ struct Level {
 struct Layer {
     #[nserde(rename = "__identifier")]
     id: String,
-    #[nserde(rename = "intGridCsv")]
-    int_grid: Vec<i64>,
+    //#[nserde(rename = "intGridCsv")]
+    //int_grid: Vec<i64>,
     #[nserde(rename = "autoLayerTiles")]
     auto_tiles: Vec<AutoTile>,
 }
