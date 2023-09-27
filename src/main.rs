@@ -8,6 +8,9 @@ struct Ground;
 struct Infrastructure;
 
 fn setup(c: &mut EngineContext) {
+    // can be turned on by hitting F8
+    c.config.borrow_mut().dev.show_fps = false;
+
     let ldtk = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/assets/comfy_wars.ldtk"
