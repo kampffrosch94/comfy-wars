@@ -46,11 +46,7 @@ jobs:
       - run: tree
       - run: trunk build --release --features comfy/ci-release
       - run: tree
-      - name: Cache rust modules
-        uses: Swatinem/rust-cache@v2.0.1
-        with:
-          cache-on-failure: true
-          shared-key: wasm-pages
+      - run: touch ./dist/.nojekyll
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
