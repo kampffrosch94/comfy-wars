@@ -47,6 +47,11 @@ jobs:
       - run: trunk build --release --features comfy/ci-release --public-url replace-with-relative
       - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
       - run: tree
+      - name: Cache rust modules
+        uses: Swatinem/rust-cache@v2.0.1
+        with:
+          cache-on-failure: true
+          shared-key: wasm-pages
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
