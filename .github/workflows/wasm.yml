@@ -44,7 +44,8 @@ jobs:
       - run: cargo install --locked trunk
       - run: ls
       - run: tree
-      - run: trunk build --release --features comfy/ci-release
+      - run: trunk build --release --features comfy/ci-release --public-url replace-with-relative
+      - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
       - run: tree
       - run: touch ./dist/.nojekyll
       - name: Upload artifact
