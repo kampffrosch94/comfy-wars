@@ -18,6 +18,7 @@
 
           # extra tooling
           ldtk # level editor
+          jq # extract stuff from json
           tracy # profiler, call with ~Tracy~
           cargo-flamegraph # more profiling :)
         ];

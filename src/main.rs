@@ -16,7 +16,12 @@ fn setup(c: &mut EngineContext) {
         "/assets/comfy_wars.ldtk"
     ));
     let ldtk: LDTK = DeJson::deserialize_json(ldtk).unwrap();
-    // dbg!(&ldtk);
+    let sprites_str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets/sprites.json"
+    ));
+    let sprites: Vec<SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
+    dbg!(&sprites);
 
     c.load_texture_from_bytes(
         "tilemap",
@@ -149,6 +154,14 @@ fn update(c: &mut EngineContext) {
     let text = format!("fps: {}", get_fps());
     draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
 }
+
+#[derive(DeJson, Debug)]
+struct SpriteData {
+    id: String,
+    x: i32,
+    y: i32,
+}
+
 
 #[derive(DeJson, Debug)]
 struct LDTK {
