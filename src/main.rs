@@ -134,9 +134,12 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
             moved = true;
         }
 
+        let v = move_dir.normalize_or_zero() * speed * dt;
+        let text = format!("v: {}", v);
+        draw_text(&text, vec2(0.0, 3.0), WHITE, TextAlign::Center);
         if moved {
             sprite.flip_x = move_dir.x < 0.0;
-            transform.position += move_dir.normalize_or_zero() * speed * dt;
+            transform.position += v;
             assert!(!transform.position.is_nan());
         }
         main_camera_mut().center = transform.position;
