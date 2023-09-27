@@ -122,7 +122,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                             if ui.button(name).clicked() {
                                 c.commands().spawn((
                                     Unit,
-                                    Transform::position(wpos),
+                                    Transform::position(grid_pos(wpos)),
                                     Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE)
                                         .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
                                 ));
@@ -131,6 +131,31 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                     });
             });
     }
+    draw_sprite_ex(
+        texture_id("tilemap"),
+        mouse_grid(),
+        WHITE,
+        20,
+        DrawTextureParams {
+            dest_size: Some(vec2(1.0, 1.0).as_world_size()),
+            source_rect: Some(IRect {
+                offset: ivec2(s.sprites["cursor"].x, s.sprites["cursor"].y),
+                size: ivec2(GRIDSIZE, GRIDSIZE),
+            }),
+            ..Default::default()
+        },
+    );
+}
+
+fn grid_pos(v: Vec2) -> Vec2 {
+    Vec2 {
+        x: v.x.round(),
+        y: v.y.round(),
+    }
+}
+
+fn mouse_grid() -> Vec2 {
+    grid_pos(mouse_world())
 }
 
 #[derive(DeJson, Debug)]

@@ -1418,7 +1418,8 @@
 			{ "id": "blue_infantry", "tileRect": { "tilesetUid": 1, "x": 256, "y": 112, "w": 16, "h": 16 }, "tileId": -1, "color": 39387, "__tileSrcRect": [256,112,16,16] },
 			{ "id": "red_infantry", "tileRect": { "tilesetUid": 1, "x": 256, "y": 128, "w": 16, "h": 16 }, "tileId": -1, "color": 10626611, "__tileSrcRect": [256,128,16,16] },
 			{ "id": "blue_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 112, "w": 16, "h": 16 }, "tileId": -1, "color": 39387, "__tileSrcRect": [128,112,16,16] },
-			{ "id": "red_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 128, "w": 16, "h": 16 }, "tileId": -1, "color": 10626611, "__tileSrcRect": [128,128,16,16] }
+			{ "id": "red_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 128, "w": 16, "h": 16 }, "tileId": -1, "color": 10626611, "__tileSrcRect": [128,128,16,16] },
+			{ "id": "cursor", "tileRect": { "tilesetUid": 1, "x": 112, "y": 48, "w": 16, "h": 16 }, "tileId": -1, "color": 14120515, "__tileSrcRect": [112,48,16,16] }
 		], "iconTilesetUid": 1, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
 	], "externalEnums": [], "levelFields": [] },
 	"levels": [
