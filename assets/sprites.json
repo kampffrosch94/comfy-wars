@@ -1,22 +1,22 @@
-[
-  {
+{
+  "blue_infantry": {
     "id": "blue_infantry",
     "x": 256,
     "y": 112
   },
-  {
+  "red_infantry": {
     "id": "red_infantry",
     "x": 256,
     "y": 128
   },
-  {
+  "blue_tank": {
     "id": "blue_tank",
     "x": 128,
     "y": 112
   },
-  {
+  "red_tank": {
     "id": "red_tank",
     "x": 128,
     "y": 128
   }
-]
+}

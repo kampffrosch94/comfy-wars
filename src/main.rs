@@ -11,17 +11,14 @@ fn setup(c: &mut EngineContext) {
     // can be turned on by hitting F8
     c.config.borrow_mut().dev.show_fps = false;
 
+
+
+    // load tiles
     let ldtk = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/assets/comfy_wars.ldtk"
     ));
     let ldtk: LDTK = DeJson::deserialize_json(ldtk).unwrap();
-    let sprites_str = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/assets/sprites.json"
-    ));
-    let sprites: Vec<SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
-    dbg!(&sprites);
 
     c.load_texture_from_bytes(
         "tilemap",
@@ -31,11 +28,14 @@ fn setup(c: &mut EngineContext) {
         )),
     );
 
-    // Load the player texture
-    c.load_texture_from_bytes(
-        "player",
-        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/tiles/guy.png")),
-    );
+    // load sprites
+    let sprites_str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets/sprites.json"
+    ));
+    let sprites: HashMap<String, SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
+    dbg!(&sprites);
+
 
     const GRIDSIZE: i32 = 16;
     for tile in ldtk
@@ -86,22 +86,15 @@ fn setup(c: &mut EngineContext) {
     c.commands().spawn((
         Transform::position(vec2(0.0, 0.0)),
         Player,
-        AnimatedSpriteBuilder::new()
-            .z_index(10)
-            .add_animation(
-                "idle",
-                0.1,
-                true,
-                AnimationSource::Atlas {
-                    name: "player".into(),
-                    offset: ivec2(0, 0),
-                    step: ivec2(16, 0),
-                    size: isplat(16),
-                    frames: 1,
-                },
-            )
-            .build(),
+        Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE).with_rect(
+            sprites["blue_tank"].x,
+            sprites["blue_tank"].y,
+            GRIDSIZE,
+            GRIDSIZE,
+        ),
     ));
+
+
 }
 
 fn update(c: &mut EngineContext) {
@@ -111,9 +104,9 @@ fn update(c: &mut EngineContext) {
 
     let dt = c.delta;
 
-    for (_, (_, animated_sprite, transform)) in c
+    for (_, (_, sprite, transform)) in c
         .world()
-        .query::<(&Player, &mut AnimatedSprite, &mut Transform)>()
+        .query::<(&Player, &mut Sprite, &mut Transform)>()
         .iter()
     {
         // Handle movement and animation
@@ -139,14 +132,10 @@ fn update(c: &mut EngineContext) {
         }
 
         if moved {
-            animated_sprite.flip_x = move_dir.x < 0.0;
+            sprite.flip_x = move_dir.x < 0.0;
             transform.position += move_dir.normalize_or_zero() * speed * dt;
             assert!(!transform.position.is_nan());
-            animated_sprite.play("walk");
-        } else {
-            animated_sprite.play("idle");
         }
-
         main_camera_mut().center = transform.position;
         //println!("Still trying to draw. {}", main_camera().center);
     }
