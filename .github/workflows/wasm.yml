@@ -1,0 +1,53 @@
+name: Wasm Build 
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches:
+      - main
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+
+env:
+  CARGO_TERM_COLOR: always
+  CACHE_ON_FAILURE: true
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
+jobs:
+  wasm-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: get_version
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Cache rust modules
+        uses: Swatinem/rust-cache@v2.0.1
+        with:
+          cache-on-failure: true
+          shared-key: wasm-pages
+      - run: cargo install --locked trunk
+      - run: ls
+      - run: tree
+      - run: trunk build --release --features comfy/ci-release --public-url replace-with-relative
+      - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
+      - run: tree
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./public
