@@ -135,7 +135,8 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         }
 
         let v = move_dir.normalize_or_zero() * speed * dt;
-        let text = format!("v: [{:.8},{:.8}]", v.x, v.y);
+        let vpers = get_fps() as f32 * v;
+        let text = format!("speed per second: [{:.8},{:.8}]", vpers.x, vpers.y);
         draw_text(&text, vec2(0.0, 3.0), WHITE, TextAlign::Center);
         if moved {
             sprite.flip_x = move_dir.x < 0.0;
