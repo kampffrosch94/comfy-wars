@@ -47,9 +47,6 @@ jobs:
       - run: trunk build --release --features comfy/ci-release --public-url replace-with-relative
       - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
       - run: tree
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
