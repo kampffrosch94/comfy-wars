@@ -44,8 +44,7 @@ jobs:
       - run: cargo install --locked trunk
       - run: ls
       - run: tree
-      - run: trunk build --release --features comfy/ci-release --public-url replace-with-relative
-      - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
+      - run: trunk build --release --features comfy/ci-release
       - run: tree
       - name: Cache rust modules
         uses: Swatinem/rust-cache@v2.0.1
