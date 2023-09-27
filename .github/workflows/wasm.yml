@@ -1,4 +1,4 @@
-name: Wasm Build 
+name: Wasm Build
 
 on:
   # Runs on pushes targeting the default branch
@@ -50,4 +50,4 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./public
+          path: ./dist
