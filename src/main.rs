@@ -160,6 +160,8 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
 
     let text = format!("fps: {}", get_fps());
     draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
+    let text = format!("dt: {}", dt);
+    draw_text(&text, vec2(0.0, 2.0), WHITE, TextAlign::Center);
 }
 
 #[derive(DeJson, Debug)]
