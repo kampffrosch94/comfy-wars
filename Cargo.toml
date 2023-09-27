@@ -7,12 +7,10 @@ edition = "2021"
 
 [dependencies]
 comfy = { git = "https://github.com/darthdeus/comfy"}
-nanoserde = "0.1.35"
-#comfy = { version = "0.1.1", features = ["tracy"] }
+#comfy = { version = "0.1.2", features = [] }
 winit = {version = "*", features = ["wayland"]}
 
-[features]
-fps = []
+nanoserde = "0.1.35"
 
 [profile.dev]
 opt-level = 1
