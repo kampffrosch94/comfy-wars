@@ -1,10 +1,9 @@
-use comfy::{egui::RichText, epaint::Color32, *};
+use comfy::*;
 use nanoserde::*;
 
 simple_game!("comfy wars", GameState, setup, update);
 
 // ECS markers
-struct Player;
 struct Ground;
 struct Infrastructure;
 struct Unit;
@@ -26,7 +25,6 @@ const GRIDSIZE: i32 = 16;
 fn setup(s: &mut GameState, c: &mut EngineContext) {
     // can be turned on by hitting F8
     c.config.borrow_mut().dev.show_fps = false;
-
     // load tiles
     let ldtk = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -89,73 +87,21 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
             Infrastructure,
         ));
     }
-
-    // Spawn the player entity and make sure z-index is above the grass
-    c.commands().spawn((
-        Transform::position(vec2(0.0, 0.0)),
-        Player,
-        Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE).with_rect(
-            s.sprites["blue_tank"].x,
-            s.sprites["blue_tank"].y,
-            GRIDSIZE,
-            GRIDSIZE,
-        ),
-    ));
 }
 
 fn update(s: &mut GameState, c: &mut EngineContext) {
     span_with_timing!("kf/update");
-    let _span = span!("renderer update");
     clear_background(TEAL);
-
-    let dt = c.delta;
-
-    for (_, (_, sprite, transform)) in c
-        .world()
-        .query::<(&Player, &mut Sprite, &mut Transform)>()
-        .iter()
-    {
-        // Handle movement and animation
-        let mut moved = false;
-        let speed = 8.0;
-        let mut move_dir = Vec2::ZERO;
-
-        if is_key_down(KeyCode::W) {
-            move_dir.y += 1.0;
-            moved = true;
-        }
-        if is_key_down(KeyCode::S) {
-            move_dir.y -= 1.0;
-            moved = true;
-        }
-        if is_key_down(KeyCode::A) {
-            move_dir.x -= 1.0;
-            moved = true;
-        }
-        if is_key_down(KeyCode::D) {
-            move_dir.x += 1.0;
-            moved = true;
-        }
-
-        let v = move_dir.normalize_or_zero() * speed * dt;
-        let vpers = get_fps() as f32 * v;
-        let text = format!("speed per second: [{:.8},{:.8}]", vpers.x, vpers.y);
-        draw_text(&text, vec2(0.0, 3.0), WHITE, TextAlign::Center);
-        if moved {
-            sprite.flip_x = move_dir.x < 0.0;
-            transform.position += v;
-            assert!(!transform.position.is_nan());
-        }
-        main_camera_mut().center = transform.position;
-        //println!("Still trying to draw. {}", main_camera().center);
-    }
-
     let mut visuals = egui::Visuals::dark();
     visuals.window_shadow = epaint::Shadow {
         extrusion: 0.,
         color: epaint::Color32::BLACK,
     };
     c.egui.set_visuals(visuals);
+
+    let c_x = tweak!(6.);
+    let c_y = tweak!(-7.);
+    main_camera_mut().center = Vec2::new(c_x, c_y);
 
     if is_mouse_button_down(MouseButton::Right) {
         s.right_click_menu_pos = Some(mouse_world());
@@ -185,11 +131,6 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                     });
             });
     }
-
-    let text = format!("fps: {}", get_fps());
-    draw_text(&text, vec2(0.0, 1.0), WHITE, TextAlign::Center);
-    let text = format!("dt: {:.8}", dt);
-    draw_text(&text, vec2(0.0, 2.0), WHITE, TextAlign::Center);
 }
 
 #[derive(DeJson, Debug)]
