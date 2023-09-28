@@ -37,7 +37,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     );
 
     // load sprites
-    let sprites_str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/sprites.json"));
+    let sprites_str = kf_include_str!("/assets/sprites.json");
     s.sprites = DeJson::deserialize_json(sprites_str).unwrap();
 
     for tile in ldtk
