@@ -1,7 +1,7 @@
 # use with `nix develop`
 # this flake assumes x86_64-linux with wayland
 {
-  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; };
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs"; };
   outputs = { self, nixpkgs, flake-utils }:
     let
       system = "x86_64-linux";
@@ -25,6 +25,7 @@
           jq # extract stuff from json
           tracy # profiler, call with ~Tracy~
           cargo-flamegraph # more profiling :)
+          # cargo-llvm-lines
         ];
         # stuff we need to run
         LD_LIBRARY_PATH = with pkgs;
