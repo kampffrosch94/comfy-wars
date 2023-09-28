@@ -1,27 +1,47 @@
-{
-  "blue_infantry": {
-    "id": "blue_infantry",
-    "x": 256,
-    "y": 112
+[
+  {
+    "blue_infantry": {
+      "tilesetUid": 1,
+      "x": 256,
+      "y": 112,
+      "w": 16,
+      "h": 16
+    }
   },
-  "red_infantry": {
-    "id": "red_infantry",
-    "x": 256,
-    "y": 128
+  {
+    "red_infantry": {
+      "tilesetUid": 1,
+      "x": 256,
+      "y": 128,
+      "w": 16,
+      "h": 16
+    }
   },
-  "blue_tank": {
-    "id": "blue_tank",
-    "x": 128,
-    "y": 112
+  {
+    "blue_tank": {
+      "tilesetUid": 1,
+      "x": 128,
+      "y": 112,
+      "w": 16,
+      "h": 16
+    }
   },
-  "red_tank": {
-    "id": "red_tank",
-    "x": 128,
-    "y": 128
+  {
+    "red_tank": {
+      "tilesetUid": 1,
+      "x": 128,
+      "y": 128,
+      "w": 16,
+      "h": 16
+    }
   },
-  "cursor": {
-    "id": "cursor",
-    "x": 112,
-    "y": 48
+  {
+    "cursor": {
+      "tilesetUid": 1,
+      "x": 112,
+      "y": 48,
+      "w": 16,
+      "h": 16
+    }
   }
-}
+]

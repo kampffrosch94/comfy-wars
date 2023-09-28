@@ -1,0 +1,34 @@
+[
+  {
+    "red_infantry": {
+      "tile_x": 256,
+      "tile_y": 128,
+      "team": "red",
+      "type": "infantry"
+    }
+  },
+  {
+    "red_tank": {
+      "tile_x": 128,
+      "tile_y": 128,
+      "team": "red",
+      "type": "tank"
+    }
+  },
+  {
+    "blue_infantry": {
+      "tile_x": 256,
+      "tile_y": 112,
+      "team": "blue",
+      "type": "infantry"
+    }
+  },
+  {
+    "blue_tank": {
+      "tile_x": 128,
+      "tile_y": 112,
+      "team": "blue",
+      "type": "tank"
+    }
+  }
+]

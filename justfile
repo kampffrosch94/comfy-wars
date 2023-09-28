@@ -5,12 +5,14 @@ default:
 tracy:
     cargo run -F comfy/tracy
 
-# grab sprites from ldtk
-parse_sprites:
-    jq '.defs.enums[] | select(.identifier == "sprite") | .values[] | { id,  x: .tileRect.x , y: .tileRect.y } ' < assets/comfy_wars.ldtk | jq -s 'INDEX(.id)'  > assets/sprites.json
-    jq . < assets/sprites.json
-
-
+sprites_exp := '
+[
+    .defs.enums[] |
+    select(.identifier == "sprite") |
+    .values[] |
+    {(.id): .tileRect }
+]
+'
 
 entities_def_exp := '
 [
@@ -25,9 +27,6 @@ entities_def_exp := '
 ]
 '
 
-parse_entities_def:
-    jq '{{entities_def_exp}}' < assets/comfy_wars.ldtk
-
 entities_map_exp := '
 [
     .levels[].layerInstances[].entityInstances[] |
@@ -39,5 +38,21 @@ entities_map_exp := '
 ]
 '
 
+# grab sprites from ldtk
+parse_sprites:
+    @jq '{{sprites_exp}}' < assets/comfy_wars.ldtk
+
+# grab entities definition from ldtk
+parse_entities_def:
+    @jq '{{entities_def_exp}}' < assets/comfy_wars.ldtk
+
+# grab entities placed on the map from ldtk
 parse_entities_map:
-    jq '{{entities_map_exp}}' < assets/comfy_wars.ldtk
+    @jq '{{entities_map_exp}}' < assets/comfy_wars.ldtk
+
+
+# parse data from the .ldtk file and write it into jsons
+write_parsed:
+  @just parse_sprites > assets/sprites.json
+  @just parse_entities_def > assets/entities_def.json
+  @just parse_entities_map > assets/entities_map.json
