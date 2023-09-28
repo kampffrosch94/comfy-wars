@@ -1,4 +1,6 @@
+mod loading;
 use comfy::*;
+use loading::*;
 use nanoserde::*;
 
 simple_game!("comfy wars", GameState, setup, update);
@@ -25,19 +27,13 @@ const GRIDSIZE: i32 = 16;
 fn setup(s: &mut GameState, c: &mut EngineContext) {
     // can be turned on by hitting F8
     c.config.borrow_mut().dev.show_fps = false;
+
     // load tiles
-    let ldtk = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/assets/comfy_wars.ldtk"
-    ));
-    let ldtk: LDTK = DeJson::deserialize_json(ldtk).unwrap();
+    let ldtk: LDTK = DeJson::deserialize_json(kf_include_str!("/assets/comfy_wars.ldtk")).unwrap();
 
     c.load_texture_from_bytes(
         "tilemap",
-        include_bytes!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/assets/tilemap/tilemap_packed.png"
-        )),
+        kf_include_bytes!("/assets/tilemap/tilemap_packed.png"),
     );
 
     // load sprites
