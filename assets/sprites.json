@@ -1,47 +1,32 @@
 [
   {
-    "blue_infantry": {
-      "tilesetUid": 1,
-      "x": 256,
-      "y": 112,
-      "w": 16,
-      "h": 16
-    }
+    "blue_infantry": [
+      256,
+      112
+    ]
   },
   {
-    "red_infantry": {
-      "tilesetUid": 1,
-      "x": 256,
-      "y": 128,
-      "w": 16,
-      "h": 16
-    }
+    "red_infantry": [
+      256,
+      128
+    ]
   },
   {
-    "blue_tank": {
-      "tilesetUid": 1,
-      "x": 128,
-      "y": 112,
-      "w": 16,
-      "h": 16
-    }
+    "blue_tank": [
+      128,
+      112
+    ]
   },
   {
-    "red_tank": {
-      "tilesetUid": 1,
-      "x": 128,
-      "y": 128,
-      "w": 16,
-      "h": 16
-    }
+    "red_tank": [
+      128,
+      128
+    ]
   },
   {
-    "cursor": {
-      "tilesetUid": 1,
-      "x": 112,
-      "y": 48,
-      "w": 16,
-      "h": 16
-    }
+    "cursor": [
+      112,
+      48
+    ]
   }
 ]

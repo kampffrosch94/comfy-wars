@@ -1,34 +1,42 @@
 [
   {
     "red_infantry": {
-      "tile_x": 256,
-      "tile_y": 128,
+      "tile_pos": [
+        256,
+        128
+      ],
       "team": "red",
-      "type": "infantry"
+      "unit_type": "infantry"
     }
   },
   {
     "red_tank": {
-      "tile_x": 128,
-      "tile_y": 128,
+      "tile_pos": [
+        128,
+        128
+      ],
       "team": "red",
-      "type": "tank"
+      "unit_type": "tank"
     }
   },
   {
     "blue_infantry": {
-      "tile_x": 256,
-      "tile_y": 112,
+      "tile_pos": [
+        256,
+        112
+      ],
       "team": "blue",
-      "type": "infantry"
+      "unit_type": "infantry"
     }
   },
   {
     "blue_tank": {
-      "tile_x": 128,
-      "tile_y": 112,
+      "tile_pos": [
+        128,
+        112
+      ],
       "team": "blue",
-      "type": "tank"
+      "unit_type": "tank"
     }
   }
 ]
