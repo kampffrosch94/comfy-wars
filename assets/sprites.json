@@ -1,32 +1,22 @@
-[
-  {
-    "blue_infantry": [
-      256,
-      112
-    ]
+{
+  "blue_infantry": {
+    "x": 256,
+    "y": 112
   },
-  {
-    "red_infantry": [
-      256,
-      128
-    ]
+  "red_infantry": {
+    "x": 256,
+    "y": 128
   },
-  {
-    "blue_tank": [
-      128,
-      112
-    ]
+  "blue_tank": {
+    "x": 128,
+    "y": 112
   },
-  {
-    "red_tank": [
-      128,
-      128
-    ]
+  "red_tank": {
+    "x": 128,
+    "y": 128
   },
-  {
-    "cursor": [
-      112,
-      48
-    ]
+  "cursor": {
+    "x": 112,
+    "y": 48
   }
-]
+}
