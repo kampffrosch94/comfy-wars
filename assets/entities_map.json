@@ -1,5 +1,15 @@
-{
-  "red_infantry": {
+[
+  {
+    "def": "red_infantry",
+    "pos": [
+      5,
+      3
+    ],
+    "team": "Red",
+    "unit_type": "Infantry"
+  },
+  {
+    "def": "red_infantry",
     "pos": [
       9,
       3
@@ -7,7 +17,17 @@
     "team": "Red",
     "unit_type": "Infantry"
   },
-  "blue_infantry": {
+  {
+    "def": "blue_infantry",
+    "pos": [
+      5,
+      11
+    ],
+    "team": "Blue",
+    "unit_type": "Infantry"
+  },
+  {
+    "def": "blue_infantry",
     "pos": [
       9,
       11
@@ -15,7 +35,8 @@
     "team": "Blue",
     "unit_type": "Infantry"
   },
-  "blue_tank": {
+  {
+    "def": "blue_tank",
     "pos": [
       9,
       9
@@ -23,7 +44,8 @@
     "team": "Blue",
     "unit_type": "Tank"
   },
-  "red_tank": {
+  {
+    "def": "red_tank",
     "pos": [
       2,
       4
@@ -31,4 +53,4 @@
     "team": "Red",
     "unit_type": "Tank"
   }
-}
+]

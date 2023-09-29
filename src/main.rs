@@ -5,9 +5,11 @@ use nanoserde::*;
 
 simple_game!("comfy wars", GameState, setup, update);
 
-// ECS markers
+/// ECS marker
 struct Ground;
+/// ECS marker
 struct Infrastructure;
+/// ECS marker
 struct Unit;
 
 #[derive(Debug, Default)]
@@ -47,7 +49,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
 
     // load entities on map
     let ed = kf_include_str!("/assets/entities_map.json");
-    let map_entities: HashMap<String, EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
+    let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
 
     for tile in ldtk
         .levels
@@ -79,7 +81,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         .flat_map(|layer| layer.auto_tiles.iter())
     {
         c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 1, WHITE).with_rect(
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE).with_rect(
                 tile.src[0],
                 tile.src[1],
                 GRIDSIZE,
@@ -93,20 +95,19 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         ));
     }
 
-    for (name, data) in map_entities.iter()
-    {
+    for me in map_entities {
+        let def = &s.entity_defs[&me.def] ;
         c.commands().spawn((
             Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 1, WHITE).with_rect(
-                s.sprites[name].x,
-                s.sprites[name].y,
+                def.sprite.x,
+                def.sprite.y,
                 GRIDSIZE,
                 GRIDSIZE,
             ),
-            Transform::position(vec2(
-                data.pos[0] as f32,
-                -data.pos[1] as f32,
-            )),
-            Infrastructure,
+            Transform::position(vec2(me.pos[0] as f32, -me.pos[1] as f32)),
+            Unit,
+            def.team,
+            def.unit_type,
         ));
     }
 }
@@ -186,14 +187,13 @@ struct SpriteData {
     y: i32,
 }
 
-
-#[derive(DeJson, Debug)]
+#[derive(DeJson, Debug, Clone, Copy)]
 enum Team {
     Blue,
     Red,
 }
 
-#[derive(DeJson, Debug)]
+#[derive(DeJson, Debug, Clone, Copy)]
 enum UnitType {
     Infantry,
     Tank,
@@ -208,6 +208,7 @@ struct EntityDef {
 
 #[derive(DeJson, Debug)]
 struct EntityOnMap {
+    def: String,
     pos: [i32; 2],
 }
 

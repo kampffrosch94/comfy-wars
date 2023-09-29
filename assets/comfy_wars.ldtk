@@ -1871,7 +1871,7 @@
 		{
 			"__cWid": 32,
 			"__cHei": 64,
-			"identifier": "internal_icons",
+			"identifier": "Internal_Icons",
 			"uid": 232,
 			"relPath": null,
 			"embedAtlas": "LdtkIcons",
@@ -1904,7 +1904,7 @@
 	], "externalEnums": [], "levelFields": [] },
 	"levels": [
 		{
-			"identifier": "level_0",
+			"identifier": "Level_0",
 			"iid": "df61f7f0-3b70-11ee-8c90-59d3223947c4",
 			"uid": 0,
 			"worldX": 0,

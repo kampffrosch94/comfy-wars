@@ -28,12 +28,12 @@ entities_def_exp := '
 entities_map_exp := '
 [
     .levels[].layerInstances[].entityInstances[] |
-    {(.__identifier): ({
+        {
+            def: .__identifier,
             pos: .__grid ,
         }
         + ( .fieldInstances | map({ (.__identifier): .__value }) | add )
-    )}
-] | add
+]
 '
 
 ldtk_file := 'assets/comfy_wars.ldtk'
