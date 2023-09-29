@@ -205,6 +205,14 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
     if is_key_pressed(KeyCode::L) {
         s.ui.draw_dijkstra_map = !s.ui.draw_dijkstra_map;
     }
+
+    {
+        s.grid.iter_values_mut().for_each(|v| *v = 0);
+        let mg = grid_pos(mouse_world());
+        *s.grid.get_clamped_mut(mg.x as _, -mg.y as _) = 5;
+        dijkstra(&mut s.grid);
+    }
+
     if s.ui.draw_dijkstra_map {
         for (x, y, val) in s.grid.iter() {
             let pos = vec2(x as _, -y as _);
@@ -246,4 +254,31 @@ fn grid_pos(v: Vec2) -> Vec2 {
         x: v.x.round(),
         y: v.y.round(),
     }
+}
+
+// naive implementation cause I am tired
+fn dijkstra(grid: &mut Grid<i32>) {
+
+    // we have do while at home
+    while {
+        //println!("iterating");
+        let positions = grid.iter().map(|(x, y, v)| (x, y, *v)).collect_vec();
+        let mut changed = false;
+        for (x, y, v) in &positions {
+            let neighbor_max = [
+                grid.get_clamped(x - 1, *y),
+                grid.get_clamped(x + 1, *y),
+                grid.get_clamped(*x, y + 1),
+                grid.get_clamped(*x, y - 1),
+            ]
+            .into_iter()
+            .max()
+            .unwrap();
+            if *neighbor_max > *v + 1 {
+                changed = true;
+                *grid.get_mut(*x, *y) = neighbor_max - 1;
+            }
+        }
+        changed
+    } {}
 }
