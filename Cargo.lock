@@ -487,6 +487,7 @@ name = "comfy-wars"
 version = "0.1.0"
 dependencies = [
  "comfy",
+ "grids",
  "nanoserde",
  "winit",
 ]
@@ -1031,6 +1032,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bf0b36e6f090b7e1d8a4b49c0cb81c1f8376f72198c65dd3ad9ff3556b8b78c"
 dependencies = [
  "bitflags 2.4.0",
+]
+
+[[package]]
+name = "grids"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5dd88e4cce43ed103a98f4ea90b0638bab12803069e2626a8f6f1b37f32e2577"
+dependencies = [
+ "glam",
 ]
 
 [[package]]

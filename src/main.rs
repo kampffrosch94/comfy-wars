@@ -1,8 +1,8 @@
 mod loading;
 use comfy::*;
+use grids::Grid;
 use loading::*;
 use nanoserde::*;
-
 
 simple_game!("comfy wars", GameState, setup, update);
 
@@ -19,17 +19,27 @@ const Z_TERRAIN: i32 = 1;
 const Z_UNITS: i32 = 10;
 const Z_CURSOR: i32 = 1000;
 
-
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct GameState {
-    right_click_menu_pos: Option<Vec2>,
+    ui: UIState,
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
+    grid: Grid<i32>,
+}
+
+#[derive(Debug, Default)]
+struct UIState {
+    right_click_menu_pos: Option<Vec2>,
 }
 
 impl GameState {
     pub fn new(_c: &mut EngineContext) -> Self {
-        Self::default()
+        Self {
+            ui: Default::default(),
+            sprites: Default::default(),
+            entity_defs: Default::default(),
+            grid: Grid::new(0, 0, 0),
+        }
     }
 }
 
@@ -41,6 +51,11 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
 
     // load tiles
     let ldtk: LDTK = DeJson::deserialize_json(kf_include_str!("/assets/comfy_wars.ldtk")).unwrap();
+    {
+        let level = &ldtk.levels[0];
+        let (w, h) = (level.pixel_width / GRIDSIZE, level.pixel_height / GRIDSIZE);
+        s.grid = Grid::new(w, h, 0);
+    }
 
     c.load_texture_from_bytes(
         "tilemap",
@@ -104,7 +119,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     }
 
     for me in map_entities {
-        let def = &s.entity_defs[&me.def] ;
+        let def = &s.entity_defs[&me.def];
         c.commands().spawn((
             Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE).with_rect(
                 def.sprite.x,
@@ -135,13 +150,13 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
     main_camera_mut().center = Vec2::new(c_x, c_y);
 
     if is_mouse_button_down(MouseButton::Right) {
-        s.right_click_menu_pos = Some(mouse_world());
+        s.ui.right_click_menu_pos = Some(mouse_world());
     }
     if is_mouse_button_down(MouseButton::Left) {
-        s.right_click_menu_pos = None;
+        s.ui.right_click_menu_pos = None;
     }
 
-    if let Some(wpos) = s.right_click_menu_pos {
+    if let Some(wpos) = s.ui.right_click_menu_pos {
         draw_cursor(s, wpos);
         let pos = world_to_screen(wpos);
         egui::Area::new("context_menu")
@@ -155,8 +170,13 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                                 c.commands().spawn((
                                     Unit,
                                     Transform::position(grid_pos(wpos)),
-                                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE)
-                                        .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
+                                    Sprite::new(
+                                        "tilemap".to_string(),
+                                        vec2(1.0, 1.0),
+                                        Z_UNITS,
+                                        WHITE,
+                                    )
+                                    .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
                                 ));
                             }
                         }
@@ -166,19 +186,30 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         draw_cursor(s, mouse_world())
     }
 
-    egui::Window::new("kf_debug_info")
-        .show(c.egui, |ui|{
-            let text = format!("mouse grid pos: {}", grid_pos(mouse_world()));
-            ui.label(text);
-            ui.separator();
-            ui.label("Entitiy transforms:");
-            for (_, (trans, ut)) in c.world().query::<(&Transform, &UnitType)>().iter() {
-                ui.label(format!("{:?}: {},{}", ut, trans.position.x, trans.position.y));
-            }
-        });
+    egui::Window::new("kf_debug_info").show(c.egui, |ui| {
+        let text = format!("mouse grid pos: {}", grid_pos(mouse_world()));
+        ui.label(text);
+        ui.separator();
+        ui.label("Entitiy transforms:");
+        for (_, (trans, ut)) in c.world().query::<(&Transform, &UnitType)>().iter() {
+            ui.label(format!(
+                "{:?}: {},{}",
+                ut, trans.position.x, trans.position.y
+            ));
+        }
+    });
+
+    for (x, y, val) in s.grid.iter() {
+        draw_text(
+            &val.to_string(),
+            vec2(x as _, -y as _),
+            WHITE,
+            TextAlign::Center,
+        );
+    }
 }
 
-fn draw_cursor(s: &GameState, pos: Vec2){
+fn draw_cursor(s: &GameState, pos: Vec2) {
     draw_sprite_ex(
         texture_id("tilemap"),
         grid_pos(pos),
@@ -242,6 +273,10 @@ struct LDTK {
 struct Level {
     #[nserde(rename = "layerInstances")]
     layers: Vec<Layer>,
+    #[nserde(rename = "pxWid")]
+    pixel_width: i32,
+    #[nserde(rename = "pxHei")]
+    pixel_height: i32,
 }
 
 #[derive(DeJson, Debug)]

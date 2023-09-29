@@ -11,6 +11,7 @@ comfy = { git = "https://github.com/darthdeus/comfy"}
 winit = {version = "*", features = ["wayland"]}
 
 nanoserde = "0.1.35"
+grids = "0.2.3"
 
 [profile.dev]
 opt-level = 1
