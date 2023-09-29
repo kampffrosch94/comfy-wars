@@ -6,12 +6,11 @@ tracy:
     cargo run -F comfy/tracy
 
 sprites_exp := '
-[
     .defs.enums[] |
     select(.identifier == "sprite") |
     .values[] |
     {(.id): .tileRect | {x, y} }
-] | reduce .[] as $item ({}; . + $item)
+    | reduce . as $item ({}; . + $item)
 '
 
 entities_def_exp := '
