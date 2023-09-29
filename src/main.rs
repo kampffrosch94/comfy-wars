@@ -1,5 +1,7 @@
+mod data;
 mod loading;
 use comfy::*;
+use data::*;
 use grids::Grid;
 use loading::*;
 use nanoserde::*;
@@ -244,66 +246,4 @@ fn grid_pos(v: Vec2) -> Vec2 {
         x: v.x.round(),
         y: v.y.round(),
     }
-}
-
-#[derive(DeJson, Debug)]
-struct SpriteData {
-    x: i32,
-    y: i32,
-}
-
-#[derive(DeJson, Debug, Clone, Copy)]
-enum Team {
-    Blue,
-    Red,
-}
-
-#[derive(DeJson, Debug, Clone, Copy)]
-enum UnitType {
-    Infantry,
-    Tank,
-}
-
-#[derive(DeJson, Debug)]
-struct EntityDef {
-    sprite: SpriteData,
-    team: Team,
-    unit_type: UnitType,
-}
-
-#[derive(DeJson, Debug)]
-struct EntityOnMap {
-    def: String,
-    pos: [i32; 2],
-}
-
-#[derive(DeJson, Debug)]
-struct LDTK {
-    levels: Vec<Level>,
-}
-
-#[derive(DeJson, Debug)]
-struct Level {
-    #[nserde(rename = "layerInstances")]
-    layers: Vec<Layer>,
-    #[nserde(rename = "pxWid")]
-    pixel_width: i32,
-    #[nserde(rename = "pxHei")]
-    pixel_height: i32,
-}
-
-#[derive(DeJson, Debug)]
-struct Layer {
-    #[nserde(rename = "__identifier")]
-    id: String,
-    //#[nserde(rename = "intGridCsv")]
-    //int_grid: Vec<i64>,
-    #[nserde(rename = "autoLayerTiles")]
-    auto_tiles: Vec<AutoTile>,
-}
-
-#[derive(DeJson, Debug)]
-struct AutoTile {
-    px: [f32; 2],
-    src: [i32; 2],
 }
