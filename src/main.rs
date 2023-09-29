@@ -3,6 +3,7 @@ use comfy::*;
 use loading::*;
 use nanoserde::*;
 
+
 simple_game!("comfy wars", GameState, setup, update);
 
 /// ECS marker
@@ -11,6 +12,13 @@ struct Ground;
 struct Infrastructure;
 /// ECS marker
 struct Unit;
+
+// constants for Z-layers
+const Z_GROUND: i32 = 0;
+const Z_TERRAIN: i32 = 1;
+const Z_UNITS: i32 = 10;
+const Z_CURSOR: i32 = 1000;
+
 
 #[derive(Debug, Default)]
 pub struct GameState {
@@ -59,7 +67,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         .flat_map(|layer| layer.auto_tiles.iter())
     {
         c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 0, WHITE).with_rect(
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
                 tile.src[0],
                 tile.src[1],
                 GRIDSIZE,
@@ -81,7 +89,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         .flat_map(|layer| layer.auto_tiles.iter())
     {
         c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE).with_rect(
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
                 tile.src[0],
                 tile.src[1],
                 GRIDSIZE,
@@ -98,7 +106,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     for me in map_entities {
         let def = &s.entity_defs[&me.def] ;
         c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 20, WHITE).with_rect(
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE).with_rect(
                 def.sprite.x,
                 def.sprite.y,
                 GRIDSIZE,
@@ -147,7 +155,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                                 c.commands().spawn((
                                     Unit,
                                     Transform::position(grid_pos(wpos)),
-                                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 10, WHITE)
+                                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE)
                                         .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
                                 ));
                             }
@@ -164,7 +172,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
             ui.label(text);
             ui.separator();
             ui.label("Entitiy transforms:");
-            for (_, (trans, _, ut)) in c.world().query::<(&Transform, &Unit, &UnitType)>().iter() {
+            for (_, (trans, ut)) in c.world().query::<(&Transform, &UnitType)>().iter() {
                 ui.label(format!("{:?}: {},{}", ut, trans.position.x, trans.position.y));
             }
         });
@@ -175,7 +183,7 @@ fn draw_cursor(s: &GameState, pos: Vec2){
         texture_id("tilemap"),
         grid_pos(pos),
         WHITE,
-        1000,
+        Z_CURSOR,
         DrawTextureParams {
             dest_size: Some(vec2(1.0, 1.0).as_world_size()),
             source_rect: Some(IRect {
