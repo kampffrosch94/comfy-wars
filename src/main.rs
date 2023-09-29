@@ -30,6 +30,7 @@ pub struct GameState {
 #[derive(Debug, Default)]
 struct UIState {
     right_click_menu_pos: Option<Vec2>,
+    draw_dijkstra_map: bool,
 }
 
 impl GameState {
@@ -199,13 +200,25 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         }
     });
 
-    for (x, y, val) in s.grid.iter() {
-        draw_text(
-            &val.to_string(),
-            vec2(x as _, -y as _),
-            WHITE,
-            TextAlign::Center,
-        );
+    if is_key_pressed(KeyCode::L) {
+        s.ui.draw_dijkstra_map = !s.ui.draw_dijkstra_map;
+    }
+    if s.ui.draw_dijkstra_map {
+        for (x, y, val) in s.grid.iter() {
+            let pos = vec2(x as _, -y as _);
+            draw_rect(
+                pos,
+                vec2(1., 1.),
+                Color {
+                    r: 0.1,
+                    g: 0.1,
+                    b: 0.1,
+                    a: 0.5,
+                },
+                50,
+            );
+            draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+        }
     }
 }
 
