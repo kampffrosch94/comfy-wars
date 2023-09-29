@@ -48,8 +48,6 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     // load entities on map
     let ed = kf_include_str!("/assets/entities_map.json");
     let map_entities: HashMap<String, EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
-    dbg!(&map_entities);
-
 
     for tile in ldtk
         .levels
@@ -90,6 +88,23 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
             Transform::position(vec2(
                 tile.px[0] / GRIDSIZE as f32,
                 -tile.px[1] / GRIDSIZE as f32,
+            )),
+            Infrastructure,
+        ));
+    }
+
+    for (name, data) in map_entities.iter()
+    {
+        c.commands().spawn((
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 1, WHITE).with_rect(
+                s.sprites[name].x,
+                s.sprites[name].y,
+                GRIDSIZE,
+                GRIDSIZE,
+            ),
+            Transform::position(vec2(
+                data.pos[0] as f32,
+                -data.pos[1] as f32,
             )),
             Infrastructure,
         ));
