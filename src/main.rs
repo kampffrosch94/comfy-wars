@@ -98,7 +98,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     for me in map_entities {
         let def = &s.entity_defs[&me.def] ;
         c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 1, WHITE).with_rect(
+            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), 20, WHITE).with_rect(
                 def.sprite.x,
                 def.sprite.y,
                 GRIDSIZE,
@@ -134,6 +134,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
     }
 
     if let Some(wpos) = s.right_click_menu_pos {
+        draw_cursor(s, wpos);
         let pos = world_to_screen(wpos);
         egui::Area::new("context_menu")
             .fixed_pos(egui::pos2(pos.x, pos.y))
@@ -153,12 +154,28 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                         }
                     });
             });
+    } else {
+        draw_cursor(s, mouse_world())
     }
+
+    egui::Window::new("kf_debug_info")
+        .show(c.egui, |ui|{
+            let text = format!("mouse grid pos: {}", grid_pos(mouse_world()));
+            ui.label(text);
+            ui.separator();
+            ui.label("Entitiy transforms:");
+            for (_, (trans, _, ut)) in c.world().query::<(&Transform, &Unit, &UnitType)>().iter() {
+                ui.label(format!("{:?}: {},{}", ut, trans.position.x, trans.position.y));
+            }
+        });
+}
+
+fn draw_cursor(s: &GameState, pos: Vec2){
     draw_sprite_ex(
         texture_id("tilemap"),
-        mouse_grid(),
+        grid_pos(pos),
         WHITE,
-        20,
+        1000,
         DrawTextureParams {
             dest_size: Some(vec2(1.0, 1.0).as_world_size()),
             source_rect: Some(IRect {
@@ -175,10 +192,6 @@ fn grid_pos(v: Vec2) -> Vec2 {
         x: v.x.round(),
         y: v.y.round(),
     }
-}
-
-fn mouse_grid() -> Vec2 {
-    grid_pos(mouse_world())
 }
 
 #[derive(DeJson, Debug)]
