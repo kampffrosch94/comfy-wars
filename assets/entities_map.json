@@ -1,62 +1,34 @@
-[
-  {
-    "red_infantry": {
-      "pos": [
-        5,
-        3
-      ],
-      "team": "red",
-      "unit_type": "infantry"
-    }
+{
+  "red_infantry": {
+    "pos": [
+      9,
+      3
+    ],
+    "team": "Red",
+    "unit_type": "Infantry"
   },
-  {
-    "red_infantry": {
-      "pos": [
-        9,
-        3
-      ],
-      "team": "red",
-      "unit_type": "infantry"
-    }
+  "blue_infantry": {
+    "pos": [
+      9,
+      11
+    ],
+    "team": "Blue",
+    "unit_type": "Infantry"
   },
-  {
-    "blue_infantry": {
-      "pos": [
-        5,
-        11
-      ],
-      "team": "blue",
-      "unit_type": "infantry"
-    }
+  "blue_tank": {
+    "pos": [
+      9,
+      9
+    ],
+    "team": "Blue",
+    "unit_type": "Tank"
   },
-  {
-    "blue_infantry": {
-      "pos": [
-        9,
-        11
-      ],
-      "team": "blue",
-      "unit_type": "infantry"
-    }
-  },
-  {
-    "blue_tank": {
-      "pos": [
-        9,
-        9
-      ],
-      "team": "blue",
-      "unit_type": "tank"
-    }
-  },
-  {
-    "red_tank": {
-      "pos": [
-        2,
-        4
-      ],
-      "team": "red",
-      "unit_type": "tank"
-    }
+  "red_tank": {
+    "pos": [
+      2,
+      4
+    ],
+    "team": "Red",
+    "unit_type": "Tank"
   }
-]
+}

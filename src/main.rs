@@ -14,6 +14,7 @@ struct Unit;
 pub struct GameState {
     right_click_menu_pos: Option<Vec2>,
     sprites: HashMap<String, SpriteData>,
+    entity_defs: HashMap<String, EntityDef>,
 }
 
 impl GameState {
@@ -39,6 +40,16 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     // load sprites
     let sprites_str = kf_include_str!("/assets/sprites.json");
     s.sprites = DeJson::deserialize_json(sprites_str).unwrap();
+
+    // load entity definitions
+    let ed = kf_include_str!("/assets/entities_def.json");
+    s.entity_defs = DeJson::deserialize_json(ed).unwrap();
+
+    // load entities on map
+    let ed = kf_include_str!("/assets/entities_map.json");
+    let map_entities: HashMap<String, EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
+    dbg!(&map_entities);
+
 
     for tile in ldtk
         .levels
@@ -158,6 +169,31 @@ fn mouse_grid() -> Vec2 {
 struct SpriteData {
     x: i32,
     y: i32,
+}
+
+
+#[derive(DeJson, Debug)]
+enum Team {
+    Blue,
+    Red,
+}
+
+#[derive(DeJson, Debug)]
+enum UnitType {
+    Infantry,
+    Tank,
+}
+
+#[derive(DeJson, Debug)]
+struct EntityDef {
+    sprite: SpriteData,
+    team: Team,
+    unit_type: UnitType,
+}
+
+#[derive(DeJson, Debug)]
+struct EntityOnMap {
+    pos: [i32; 2],
 }
 
 #[derive(DeJson, Debug)]

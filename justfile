@@ -8,7 +8,7 @@ tracy:
 sprites_exp := '
 [
     .defs.enums[] |
-    select(.identifier == "sprite") |
+    select(.identifier == "Sprite") |
     .values[] |
     {(.id): .tileRect | {x, y} }
 ] | add

@@ -12,7 +12,7 @@
 	"jsonVersion": "1.4.0",
 	"appBuildId": 470941,
 	"nextUid": 250,
-	"identifierStyle": "Lowercase",
+	"identifierStyle": "Free",
 	"toc": [],
 	"worldLayout": "Free",
 	"worldGridWidth": 256,
@@ -1437,7 +1437,7 @@
 				{
 					"identifier": "team",
 					"doc": null,
-					"__type": "LocalEnum.team",
+					"__type": "LocalEnum.Team",
 					"uid": 237,
 					"type": "F_Enum(236)",
 					"isArray": false,
@@ -1461,7 +1461,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["red"]
+						"params": ["Red"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1475,7 +1475,7 @@
 				{
 					"identifier": "unit_type",
 					"doc": null,
-					"__type": "LocalEnum.unit_type",
+					"__type": "LocalEnum.UnitType",
 					"uid": 240,
 					"type": "F_Enum(238)",
 					"isArray": false,
@@ -1499,7 +1499,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["infantry"]
+						"params": ["Infantry"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1548,7 +1548,7 @@
 				{
 					"identifier": "team",
 					"doc": null,
-					"__type": "LocalEnum.team",
+					"__type": "LocalEnum.Team",
 					"uid": 248,
 					"type": "F_Enum(236)",
 					"isArray": false,
@@ -1572,7 +1572,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["red"]
+						"params": ["Red"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1586,7 +1586,7 @@
 				{
 					"identifier": "unit_type",
 					"doc": null,
-					"__type": "LocalEnum.unit_type",
+					"__type": "LocalEnum.UnitType",
 					"uid": 249,
 					"type": "F_Enum(238)",
 					"isArray": false,
@@ -1610,7 +1610,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["tank"]
+						"params": ["Tank"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1659,7 +1659,7 @@
 				{
 					"identifier": "team",
 					"doc": null,
-					"__type": "LocalEnum.team",
+					"__type": "LocalEnum.Team",
 					"uid": 242,
 					"type": "F_Enum(236)",
 					"isArray": false,
@@ -1683,7 +1683,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["blue"]
+						"params": ["Blue"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1697,7 +1697,7 @@
 				{
 					"identifier": "unit_type",
 					"doc": null,
-					"__type": "LocalEnum.unit_type",
+					"__type": "LocalEnum.UnitType",
 					"uid": 243,
 					"type": "F_Enum(238)",
 					"isArray": false,
@@ -1721,7 +1721,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["infantry"]
+						"params": ["Infantry"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1770,7 +1770,7 @@
 				{
 					"identifier": "team",
 					"doc": null,
-					"__type": "LocalEnum.team",
+					"__type": "LocalEnum.Team",
 					"uid": 245,
 					"type": "F_Enum(236)",
 					"isArray": false,
@@ -1794,7 +1794,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["blue"]
+						"params": ["Blue"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1808,7 +1808,7 @@
 				{
 					"identifier": "unit_type",
 					"doc": null,
-					"__type": "LocalEnum.unit_type",
+					"__type": "LocalEnum.UnitType",
 					"uid": 246,
 					"type": "F_Enum(238)",
 					"isArray": false,
@@ -1832,7 +1832,7 @@
 					"acceptFileTypes": null,
 					"defaultOverride": {
 						"id": "V_String",
-						"params": ["tank"]
+						"params": ["Tank"]
 					},
 					"textLanguageMode": null,
 					"symmetricalRef": false,
@@ -1892,15 +1892,15 @@
 		}
 	], "enums": [
 		{ "identifier": "terrain_type", "uid": 2, "values": [ { "id": "land", "tileRect": null, "color": 12470831 }, { "id": "water", "tileRect": null, "color": 14120515 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
-		{ "identifier": "sprite", "uid": 231, "values": [
+		{ "identifier": "Sprite", "uid": 231, "values": [
 			{ "id": "blue_infantry", "tileRect": { "tilesetUid": 1, "x": 256, "y": 112, "w": 16, "h": 16 }, "color": 39387 },
 			{ "id": "red_infantry", "tileRect": { "tilesetUid": 1, "x": 256, "y": 128, "w": 16, "h": 16 }, "color": 10626611 },
 			{ "id": "blue_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 112, "w": 16, "h": 16 }, "color": 39387 },
 			{ "id": "red_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 128, "w": 16, "h": 16 }, "color": 10626611 },
 			{ "id": "cursor", "tileRect": { "tilesetUid": 1, "x": 112, "y": 48, "w": 16, "h": 16 }, "color": 14120515 }
 		], "iconTilesetUid": 1, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
-		{ "identifier": "team", "uid": 236, "values": [ { "id": "red", "tileRect": null, "color": 12470831 }, { "id": "blue", "tileRect": null, "color": 39387 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
-		{ "identifier": "unit_type", "uid": 238, "values": [ { "id": "infantry", "tileRect": null, "color": 12470831 }, { "id": "tank", "tileRect": null, "color": 14120515 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
+		{ "identifier": "Team", "uid": 236, "values": [ { "id": "Red", "tileRect": null, "color": 12470831 }, { "id": "Blue", "tileRect": null, "color": 39387 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
+		{ "identifier": "UnitType", "uid": 238, "values": [ { "id": "Infantry", "tileRect": null, "color": 12470831 }, { "id": "Tank", "tileRect": null, "color": 14120515 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
 	], "externalEnums": [], "levelFields": [] },
 	"levels": [
 		{
@@ -1963,8 +1963,14 @@
 							"defUid": 233,
 							"px": [88,56],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "red", "__tile": null, "defUid": 237, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "infantry", "__tile": null, "defUid": 240, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Red", "__tile": null, "defUid": 237, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Red"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Infantry", "__tile": null, "defUid": 240, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Infantry"]
+								}] }
 							]
 						},
 						{
@@ -1982,8 +1988,14 @@
 							"defUid": 233,
 							"px": [152,56],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "red", "__tile": null, "defUid": 237, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "infantry", "__tile": null, "defUid": 240, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Red", "__tile": null, "defUid": 237, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Red"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Infantry", "__tile": null, "defUid": 240, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Infantry"]
+								}] }
 							]
 						},
 						{
@@ -2001,8 +2013,14 @@
 							"defUid": 241,
 							"px": [88,184],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "blue", "__tile": null, "defUid": 242, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "infantry", "__tile": null, "defUid": 243, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Blue", "__tile": null, "defUid": 242, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Blue"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Infantry", "__tile": null, "defUid": 243, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Infantry"]
+								}] }
 							]
 						},
 						{
@@ -2020,8 +2038,14 @@
 							"defUid": 241,
 							"px": [152,184],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "blue", "__tile": null, "defUid": 242, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "infantry", "__tile": null, "defUid": 243, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Blue", "__tile": null, "defUid": 242, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Blue"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Infantry", "__tile": null, "defUid": 243, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Infantry"]
+								}] }
 							]
 						},
 						{
@@ -2039,8 +2063,14 @@
 							"defUid": 244,
 							"px": [152,152],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "blue", "__tile": null, "defUid": 245, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "tank", "__tile": null, "defUid": 246, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Blue", "__tile": null, "defUid": 245, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Blue"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Tank", "__tile": null, "defUid": 246, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Tank"]
+								}] }
 							]
 						},
 						{
@@ -2058,8 +2088,14 @@
 							"defUid": 247,
 							"px": [40,72],
 							"fieldInstances": [
-								{ "__identifier": "team", "__type": "LocalEnum.team", "__value": "red", "__tile": null, "defUid": 248, "realEditorValues": [] },
-								{ "__identifier": "unit_type", "__type": "LocalEnum.unit_type", "__value": "tank", "__tile": null, "defUid": 249, "realEditorValues": [] }
+								{ "__identifier": "team", "__type": "LocalEnum.Team", "__value": "Red", "__tile": null, "defUid": 248, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Red"]
+								}] },
+								{ "__identifier": "unit_type", "__type": "LocalEnum.UnitType", "__value": "Tank", "__tile": null, "defUid": 249, "realEditorValues": [{
+									"id": "V_String",
+									"params": ["Tank"]
+								}] }
 							]
 						}
 					]
