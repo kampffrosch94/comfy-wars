@@ -6,22 +6,23 @@ tracy:
     cargo run -F comfy/tracy
 
 sprites_exp := '
+[
     .defs.enums[] |
     select(.identifier == "sprite") |
     .values[] |
     {(.id): .tileRect | {x, y} }
-    | reduce . as $item ({}; . + $item)
+] | add
 '
 
 entities_def_exp := '
 [
     .defs.entities[] |
     {(.identifier): ({
-          tile_pos: .tileRect | [.x, .y],
+          sprite: .tileRect | {x, y},
         }
         + ( .fieldDefs | map({ (.identifier): .defaultOverride.params[0] }) | add )
     )}
-]
+] | add
 '
 
 entities_map_exp := '
@@ -32,7 +33,7 @@ entities_map_exp := '
         }
         + ( .fieldInstances | map({ (.__identifier): .__value }) | add )
     )}
-]
+] | add
 '
 
 ldtk_file := 'assets/comfy_wars.ldtk'
