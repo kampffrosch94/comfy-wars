@@ -27,6 +27,8 @@ pub struct GameState {
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
     grid: Grid<i32>,
+    ground_grid: Grid<GroundType>,
+    terrain_grid: Grid<TerrainType>,
 }
 
 #[derive(Debug, Default)]
@@ -42,8 +44,27 @@ impl GameState {
             sprites: Default::default(),
             entity_defs: Default::default(),
             grid: Grid::new(0, 0, 0),
+            ground_grid: Grid::new(0, 0, Default::default()),
+            terrain_grid: Grid::new(0, 0, Default::default()),
         }
     }
+}
+
+/// used for determining movement cost
+#[derive(Debug, Default, Clone, Copy)]
+enum GroundType {
+    #[default]
+    Ground,
+    Water,
+}
+
+/// used for determining movement cost
+#[derive(Debug, Default, Clone, Copy)]
+enum TerrainType {
+    #[default]
+    None,
+    Street,
+    Forest,
 }
 
 const GRIDSIZE: i32 = 16;
@@ -58,6 +79,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         let level = &ldtk.levels[0];
         let (w, h) = (level.pixel_width / GRIDSIZE, level.pixel_height / GRIDSIZE);
         s.grid = Grid::new(w, h, 0);
+        s.ground_grid = Grid::new(w, h, Default::default());
     }
 
     c.load_texture_from_bytes(
@@ -77,48 +99,61 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     let ed = kf_include_str!("/assets/entities_map.json");
     let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
 
-    for tile in ldtk
+    for layer in ldtk
         .levels
         .iter()
         .flat_map(|level| level.layers.iter())
         .filter(|layer| layer.id == "groundgrid")
-        .flat_map(|layer| layer.auto_tiles.iter())
     {
-        c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
-                tile.src[0],
-                tile.src[1],
-                GRIDSIZE,
-                GRIDSIZE,
-            ),
-            Transform::position(vec2(
-                tile.px[0] / GRIDSIZE as f32,
-                -tile.px[1] / GRIDSIZE as f32,
-            )),
-            Ground,
-        ));
+        s.ground_grid = grid_from_layer(layer, |i| match i {
+            1 => GroundType::Ground,
+            2 => GroundType::Water,
+            _ => panic!("unsupported ground type {}", i),
+        });
+        for tile in layer.auto_tiles.iter() {
+            c.commands().spawn((
+                Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
+                    tile.src[0],
+                    tile.src[1],
+                    GRIDSIZE,
+                    GRIDSIZE,
+                ),
+                Transform::position(vec2(
+                    tile.px[0] / GRIDSIZE as f32,
+                    -tile.px[1] / GRIDSIZE as f32,
+                )),
+                Ground,
+            ));
+        }
     }
 
-    for tile in ldtk
+    for layer in ldtk
         .levels
         .iter()
         .flat_map(|level| level.layers.iter())
         .filter(|layer| layer.id == "infrastructuregrid")
-        .flat_map(|layer| layer.auto_tiles.iter())
     {
-        c.commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
-                tile.src[0],
-                tile.src[1],
-                GRIDSIZE,
-                GRIDSIZE,
-            ),
-            Transform::position(vec2(
-                tile.px[0] / GRIDSIZE as f32,
-                -tile.px[1] / GRIDSIZE as f32,
-            )),
-            Infrastructure,
-        ));
+        for tile in layer.auto_tiles.iter() {
+            s.terrain_grid = grid_from_layer(layer, |i| match i {
+                0 => TerrainType::None,
+                1 | 2 | 3 | 4 => TerrainType::Street,
+                5 => TerrainType::Forest,
+                _ => panic!("unsupported terrain type {}", i),
+            });
+            c.commands().spawn((
+                Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
+                    tile.src[0],
+                    tile.src[1],
+                    GRIDSIZE,
+                    GRIDSIZE,
+                ),
+                Transform::position(vec2(
+                    tile.px[0] / GRIDSIZE as f32,
+                    -tile.px[1] / GRIDSIZE as f32,
+                )),
+                Infrastructure,
+            ));
+        }
     }
 
     for me in map_entities {
@@ -172,7 +207,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                             if ui.button(name).clicked() {
                                 c.commands().spawn((
                                     Unit,
-                                    Transform::position(grid_pos(wpos)),
+                                    Transform::position(grid_world_pos(wpos)),
                                     Sprite::new(
                                         "tilemap".to_string(),
                                         vec2(1.0, 1.0),
@@ -190,8 +225,12 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
     }
 
     egui::Window::new("kf_debug_info").show(c.egui, |ui| {
-        let text = format!("mouse grid pos: {}", grid_pos(mouse_world()));
-        ui.label(text);
+        let pos = grid_world_pos(mouse_world());
+        ui.label(format!("mouse world grid pos: {}", pos));
+        let pos = ivec2(pos.x as _, -pos.y as _);
+        ui.label(format!("ground type {:?}", s.ground_grid.get_clamped_v(pos)));
+        ui.label(format!("terrain type {:?}", s.terrain_grid.get_clamped_v(pos)));
+
         ui.separator();
         ui.label("Entitiy transforms:");
         for (_, (trans, ut)) in c.world().query::<(&Transform, &UnitType)>().iter() {
@@ -208,7 +247,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
 
     {
         s.grid.iter_values_mut().for_each(|v| *v = 0);
-        let mg = grid_pos(mouse_world());
+        let mg = grid_world_pos(mouse_world());
         let pos = ivec2(mg.x as _, -mg.y as _);
         *s.grid.get_clamped_mut(pos.x, pos.y) = 5;
         dijkstra(&mut s.grid, &[pos]);
@@ -236,7 +275,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
 fn draw_cursor(s: &GameState, pos: Vec2) {
     draw_sprite_ex(
         texture_id("tilemap"),
-        grid_pos(pos),
+        grid_world_pos(pos),
         WHITE,
         Z_CURSOR,
         DrawTextureParams {
@@ -250,7 +289,7 @@ fn draw_cursor(s: &GameState, pos: Vec2) {
     );
 }
 
-fn grid_pos(v: Vec2) -> Vec2 {
+fn grid_world_pos(v: Vec2) -> Vec2 {
     Vec2 {
         x: v.x.round(),
         y: v.y.round(),
@@ -268,9 +307,10 @@ fn get_neighbors(pos: IVec2, grid: &Grid<i32>) -> Vec<IVec2> {
 }
 
 fn dijkstra(grid: &mut Grid<i32>, seed: &[IVec2]) {
-    let mut next: Vec<IVec2> = seed.iter().flat_map(
-        |pos| get_neighbors(*pos, grid)
-    ).collect_vec();
+    let mut next: Vec<IVec2> = seed
+        .iter()
+        .flat_map(|pos| get_neighbors(*pos, grid))
+        .collect_vec();
 
     while !next.is_empty() {
         let buffer = next.drain(..).collect_vec();
@@ -298,22 +338,21 @@ fn dijkstra(grid: &mut Grid<i32>, seed: &[IVec2]) {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn get_neighbors_test() {
-        let grid = Grid::new(10,10,0);
-        let neighbors = get_neighbors(ivec2(1,1), &grid);
+        let grid = Grid::new(10, 10, 0);
+        let neighbors = get_neighbors(ivec2(1, 1), &grid);
         assert_eq!(4, neighbors.len());
         assert!(neighbors.contains(&ivec2(0, 1)));
         assert!(neighbors.contains(&ivec2(2, 1)));
         assert!(neighbors.contains(&ivec2(1, 0)));
         assert!(neighbors.contains(&ivec2(1, 2)));
 
-        let neighbors = get_neighbors(ivec2(0,0), &grid);
+        let neighbors = get_neighbors(ivec2(0, 0), &grid);
         assert_eq!(2, neighbors.len());
         assert!(neighbors.contains(&ivec2(0, 1)));
         assert!(neighbors.contains(&ivec2(1, 0)));
@@ -321,18 +360,18 @@ mod tests {
 
     #[test]
     fn dijkstra_map_test() {
-        let mut grid = Grid::new(10,10,0);
-        let pos = ivec2(5,5);
+        let mut grid = Grid::new(10, 10, 0);
+        let pos = ivec2(5, 5);
         *grid.get_clamped_mut(pos.x, pos.y) = 5;
         dijkstra(&mut grid, &[pos]);
-        assert_eq!(2,*grid.get(2, 5));
+        assert_eq!(2, *grid.get(2, 5));
 
-        let mut grid = Grid::new(10,10,0);
-        let pos = ivec2(5,5);
+        let mut grid = Grid::new(10, 10, 0);
+        let pos = ivec2(5, 5);
         *grid.get_clamped_mut(pos.x, pos.y) = 5;
-        let pos2 = ivec2(1,4);
+        let pos2 = ivec2(1, 4);
         *grid.get_clamped_mut(pos2.x, pos2.y) = 5;
         dijkstra(&mut grid, &[pos, pos2]);
-        assert_eq!(3,*grid.get(2, 5));
+        assert_eq!(3, *grid.get(2, 5));
     }
 }
