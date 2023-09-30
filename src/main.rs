@@ -23,14 +23,12 @@ const Z_TERRAIN: i32 = 1;
 const Z_UNITS: i32 = 10;
 const Z_CURSOR: i32 = 1000;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GameState {
     ui: UIState,
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
-    grid: Grid<i32>,
-    ground_grid: Grid<GroundType>,
-    terrain_grid: Grid<TerrainType>,
+    grids: Grids,
 }
 
 #[derive(Debug, Default)]
@@ -39,16 +37,26 @@ struct UIState {
     draw_dijkstra_map: bool,
 }
 
+#[derive(Debug)]
+struct Grids {
+    dijkstra: Grid<i32>,
+    ground: Grid<GroundType>,
+    terrain: Grid<TerrainType>,
+}
+
+impl Default for Grids {
+    fn default() -> Self {
+        Self {
+            dijkstra: Grid::new(0, 0, 0),
+            ground: Grid::new(0, 0, Default::default()),
+            terrain: Grid::new(0, 0, Default::default()),
+        }
+    }
+}
+
 impl GameState {
     pub fn new(_c: &mut EngineContext) -> Self {
-        Self {
-            ui: Default::default(),
-            sprites: Default::default(),
-            entity_defs: Default::default(),
-            grid: Grid::new(0, 0, 0),
-            ground_grid: Grid::new(0, 0, Default::default()),
-            terrain_grid: Grid::new(0, 0, Default::default()),
-        }
+        Self::default()
     }
 }
 
@@ -77,8 +85,8 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     {
         let level = &ldtk.levels[0];
         let (w, h) = (level.pixel_width / GRIDSIZE, level.pixel_height / GRIDSIZE);
-        s.grid = Grid::new(w, h, 0);
-        s.ground_grid = Grid::new(w, h, Default::default());
+        s.grids.dijkstra = Grid::new(w, h, 0);
+        s.grids.ground = Grid::new(w, h, Default::default());
     }
 
     c.load_texture_from_bytes(
@@ -104,7 +112,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         .flat_map(|level| level.layers.iter())
         .filter(|layer| layer.id == "groundgrid")
     {
-        s.ground_grid = grid_from_layer(layer, |i| match i {
+        s.grids.ground = grid_from_layer(layer, |i| match i {
             1 => GroundType::Ground,
             2 => GroundType::Water,
             _ => panic!("unsupported ground type {}", i),
@@ -133,7 +141,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
         .filter(|layer| layer.id == "infrastructuregrid")
     {
         for tile in layer.auto_tiles.iter() {
-            s.terrain_grid = grid_from_layer(layer, |i| match i {
+            s.grids.terrain = grid_from_layer(layer, |i| match i {
                 0 => TerrainType::None,
                 1 | 2 | 3 | 4 => TerrainType::Street,
                 5 => TerrainType::Forest,
@@ -229,11 +237,11 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
         let pos = ivec2(pos.x as _, -pos.y as _);
         ui.label(format!(
             "ground type {:?}",
-            s.ground_grid.get_clamped_v(pos)
+            s.grids.ground.get_clamped_v(pos)
         ));
         ui.label(format!(
             "terrain type {:?}",
-            s.terrain_grid.get_clamped_v(pos)
+            s.grids.terrain.get_clamped_v(pos)
         ));
 
         ui.separator();
@@ -251,13 +259,13 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
     }
 
     {
-        s.grid.iter_values_mut().for_each(|v| *v = 0);
+        s.grids.dijkstra.iter_values_mut().for_each(|v| *v = 0);
         let mg = grid_world_pos(mouse_world());
         let pos = ivec2(mg.x as _, -mg.y as _);
-        *s.grid.get_clamped_mut(pos.x, pos.y) = 9;
-        dijkstra(&mut s.grid, &[pos], |v| -> i32 {
-            let ground = *s.ground_grid.get_clamped_v(v);
-            let terrain = *s.terrain_grid.get_clamped_v(v);
+        *s.grids.dijkstra.get_clamped_mut(pos.x, pos.y) = 9;
+        dijkstra(&mut s.grids.dijkstra, &[pos], |v| -> i32 {
+            let ground = *s.grids.ground.get_clamped_v(v);
+            let terrain = *s.grids.terrain.get_clamped_v(v);
             match ground {
                 GroundType::Water => 9999,
                 GroundType::Ground => match terrain {
@@ -270,7 +278,7 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
     }
 
     if s.ui.draw_dijkstra_map {
-        for (x, y, val) in s.grid.iter() {
+        for (x, y, val) in s.grids.dijkstra.iter() {
             let pos = vec2(x as _, -y as _);
             draw_rect(
                 pos,
