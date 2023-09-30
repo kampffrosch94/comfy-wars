@@ -250,7 +250,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         let mg = grid_world_pos(mouse_world());
         let pos = ivec2(mg.x as _, -mg.y as _);
         *s.grid.get_clamped_mut(pos.x, pos.y) = 5;
-        dijkstra(&mut s.grid, &[pos]);
+        dijkstra(&mut s.grid, &[pos], |_| 1);
     }
 
     if s.ui.draw_dijkstra_map {
@@ -306,7 +306,7 @@ fn get_neighbors(pos: IVec2, grid: &Grid<i32>) -> Vec<IVec2> {
         .collect_vec()
 }
 
-fn dijkstra(grid: &mut Grid<i32>, seed: &[IVec2]) {
+fn dijkstra<F: Fn(IVec2) -> i32>(grid: &mut Grid<i32>, seed: &[IVec2], cost: F) {
     let mut next: Vec<IVec2> = seed
         .iter()
         .flat_map(|pos| get_neighbors(*pos, grid))
@@ -324,13 +324,14 @@ fn dijkstra(grid: &mut Grid<i32>, seed: &[IVec2]) {
             };
             if let Some(neighbor_max) = neighbor_max {
                 let v = *grid.get_clamped_v(pos);
-                if neighbor_max > v + 1 {
-                    let new_val = neighbor_max - 1;
+                let c = cost(pos);
+                if neighbor_max > v + c {
+                    let new_val = neighbor_max - c;
                     *grid.get_mut(pos.x, pos.y) = new_val;
                     next.extend(
                         get_neighbors(pos, grid)
                             .into_iter()
-                            .filter(|pos| *grid.get(pos.x, pos.y) < new_val - 1),
+                            .filter(|pos| *grid.get(pos.x, pos.y) < new_val - cost(*pos)),
                     );
                 }
             }
@@ -360,18 +361,28 @@ mod tests {
 
     #[test]
     fn dijkstra_map_test() {
+        // basic
         let mut grid = Grid::new(10, 10, 0);
         let pos = ivec2(5, 5);
         *grid.get_clamped_mut(pos.x, pos.y) = 5;
-        dijkstra(&mut grid, &[pos]);
+        dijkstra(&mut grid, &[pos], |_| 1);
         assert_eq!(2, *grid.get(2, 5));
 
+        // higher cost
+        let mut grid = Grid::new(10, 10, 0);
+        let pos = ivec2(5, 5);
+        *grid.get_clamped_mut(pos.x, pos.y) = 5;
+        dijkstra(&mut grid, &[pos], |_| 2);
+        assert_eq!(0, *grid.get(2, 5));
+        assert_eq!(1, *grid.get(3, 5));
+
+        // multiple seeds
         let mut grid = Grid::new(10, 10, 0);
         let pos = ivec2(5, 5);
         *grid.get_clamped_mut(pos.x, pos.y) = 5;
         let pos2 = ivec2(1, 4);
         *grid.get_clamped_mut(pos2.x, pos2.y) = 5;
-        dijkstra(&mut grid, &[pos, pos2]);
+        dijkstra(&mut grid, &[pos, pos2], |_| 1);
         assert_eq!(3, *grid.get(2, 5));
     }
 }
