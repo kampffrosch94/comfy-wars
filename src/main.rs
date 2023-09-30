@@ -70,9 +70,6 @@ enum TerrainType {
 const GRIDSIZE: i32 = 16;
 
 fn setup(s: &mut GameState, c: &mut EngineContext) {
-    // can be turned on by hitting F8
-    c.config.borrow_mut().dev.show_fps = false;
-
     // load tiles
     let ldtk: LDTK = DeJson::deserialize_json(kf_include_str!("/assets/comfy_wars.ldtk")).unwrap();
     {
@@ -111,7 +108,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
             _ => panic!("unsupported ground type {}", i),
         });
         for tile in layer.auto_tiles.iter() {
-            c.commands().spawn((
+            commands().spawn((
                 Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
                     tile.src[0],
                     tile.src[1],
@@ -140,7 +137,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
                 5 => TerrainType::Forest,
                 _ => panic!("unsupported terrain type {}", i),
             });
-            c.commands().spawn((
+            commands().spawn((
                 Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
                     tile.src[0],
                     tile.src[1],
@@ -158,7 +155,7 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
 
     for me in map_entities {
         let def = &s.entity_defs[&me.def];
-        c.commands().spawn((
+        commands().spawn((
             Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE).with_rect(
                 def.sprite.x,
                 def.sprite.y,
@@ -181,7 +178,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         extrusion: 0.,
         color: epaint::Color32::BLACK,
     };
-    c.egui.set_visuals(visuals);
+    egui().set_visuals(visuals);
 
     let c_x = tweak!(6.);
     let c_y = tweak!(-7.);
@@ -199,13 +196,13 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         let pos = world_to_screen(wpos);
         egui::Area::new("context_menu")
             .fixed_pos(egui::pos2(pos.x, pos.y))
-            .show(c.egui, |ui| {
+            .show(egui(), |ui| {
                 egui::Frame::none()
                     .fill(egui::Color32::BLACK)
                     .show(ui, |ui| {
                         for (name, sprite) in s.sprites.iter().sorted_by_key(|s| s.0) {
                             if ui.button(name).clicked() {
-                                c.commands().spawn((
+                                commands().spawn((
                                     Unit,
                                     Transform::position(grid_world_pos(wpos)),
                                     Sprite::new(
@@ -224,7 +221,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         draw_cursor(s, mouse_world())
     }
 
-    egui::Window::new("kf_debug_info").show(c.egui, |ui| {
+    egui::Window::new("kf_debug_info").show(egui(), |ui| {
         let pos = grid_world_pos(mouse_world());
         ui.label(format!("mouse world grid pos: {}", pos));
         let pos = ivec2(pos.x as _, -pos.y as _);
@@ -239,7 +236,7 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
 
         ui.separator();
         ui.label("Entitiy transforms:");
-        for (_, (trans, ut)) in c.world().query::<(&Transform, &UnitType)>().iter() {
+        for (_, (trans, ut)) in world().query::<(&Transform, &UnitType)>().iter() {
             ui.label(format!(
                 "{:?}: {},{}",
                 ut, trans.position.x, trans.position.y
