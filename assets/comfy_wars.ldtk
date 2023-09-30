@@ -1897,7 +1897,18 @@
 			{ "id": "red_infantry", "tileRect": { "tilesetUid": 1, "x": 256, "y": 128, "w": 16, "h": 16 }, "color": 10626611 },
 			{ "id": "blue_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 112, "w": 16, "h": 16 }, "color": 39387 },
 			{ "id": "red_tank", "tileRect": { "tilesetUid": 1, "x": 128, "y": 128, "w": 16, "h": 16 }, "color": 10626611 },
-			{ "id": "cursor", "tileRect": { "tilesetUid": 1, "x": 112, "y": 48, "w": 16, "h": 16 }, "color": 14120515 }
+			{ "id": "cursor", "tileRect": { "tilesetUid": 1, "x": 112, "y": 48, "w": 16, "h": 16 }, "color": 14120515 },
+			{ "id": "arrow_n", "tileRect": { "tilesetUid": 1, "x": 64, "y": 32, "w": 16, "h": 16 }, "color": 14984818 },
+			{ "id": "arrow_ns", "tileRect": { "tilesetUid": 1, "x": 64, "y": 48, "w": 16, "h": 16 }, "color": 15389866 },
+			{ "id": "arrow_s", "tileRect": { "tilesetUid": 1, "x": 64, "y": 64, "w": 16, "h": 16 }, "color": 7552569 },
+			{ "id": "arrow_we", "tileRect": { "tilesetUid": 1, "x": 96, "y": 32, "w": 16, "h": 16 }, "color": 4073265 },
+			{ "id": "arrow_w", "tileRect": { "tilesetUid": 1, "x": 80, "y": 32, "w": 16, "h": 16 }, "color": 16690740 },
+			{ "id": "arrow_e", "tileRect": { "tilesetUid": 1, "x": 112, "y": 32, "w": 16, "h": 16 }, "color": 16705377 },
+			{ "id": "arrow_se", "tileRect": { "tilesetUid": 1, "x": 80, "y": 48, "w": 16, "h": 16 }, "color": 6539085 },
+			{ "id": "arrow_ne", "tileRect": { "tilesetUid": 1, "x": 80, "y": 64, "w": 16, "h": 16 }, "color": 1199753 },
+			{ "id": "arrow_ws", "tileRect": { "tilesetUid": 1, "x": 96, "y": 48, "w": 16, "h": 16 }, "color": 4098376 },
+			{ "id": "arrow_wn", "tileRect": { "tilesetUid": 1, "x": 96, "y": 64, "w": 16, "h": 16 }, "color": 2943221 },
+			{ "id": "move_range", "tileRect": { "tilesetUid": 1, "x": 112, "y": 64, "w": 16, "h": 16 }, "color": 16777215 }
 		], "iconTilesetUid": 1, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
 		{ "identifier": "Team", "uid": 236, "values": [ { "id": "Red", "tileRect": null, "color": 12470831 }, { "id": "Blue", "tileRect": null, "color": 39387 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] },
 		{ "identifier": "UnitType", "uid": 238, "values": [ { "id": "Infantry", "tileRect": null, "color": 12470831 }, { "id": "Tank", "tileRect": null, "color": 14120515 } ], "iconTilesetUid": null, "externalRelPath": null, "externalFileChecksum": null, "tags": [] }
