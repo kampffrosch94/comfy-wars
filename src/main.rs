@@ -325,6 +325,14 @@ mod tests {
         let pos = ivec2(5,5);
         *grid.get_clamped_mut(pos.x, pos.y) = 5;
         dijkstra(&mut grid, &[pos]);
-        assert_eq!(3,*grid.get(3, 5));
+        assert_eq!(2,*grid.get(2, 5));
+
+        let mut grid = Grid::new(10,10,0);
+        let pos = ivec2(5,5);
+        *grid.get_clamped_mut(pos.x, pos.y) = 5;
+        let pos2 = ivec2(1,4);
+        *grid.get_clamped_mut(pos2.x, pos2.y) = 5;
+        dijkstra(&mut grid, &[pos, pos2]);
+        assert_eq!(3,*grid.get(2, 5));
     }
 }
