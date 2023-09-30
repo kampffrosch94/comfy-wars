@@ -209,8 +209,9 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
     {
         s.grid.iter_values_mut().for_each(|v| *v = 0);
         let mg = grid_pos(mouse_world());
-        *s.grid.get_clamped_mut(mg.x as _, -mg.y as _) = 5;
-        dijkstra(&mut s.grid);
+        let pos = ivec2(mg.x as _, -mg.y as _);
+        *s.grid.get_clamped_mut(pos.x, pos.y) = 5;
+        dijkstra(&mut s.grid, &[pos]);
     }
 
     if s.ui.draw_dijkstra_map {
@@ -256,29 +257,74 @@ fn grid_pos(v: Vec2) -> Vec2 {
     }
 }
 
-// naive implementation cause I am tired
-fn dijkstra(grid: &mut Grid<i32>) {
+fn get_neighbors(pos: IVec2, grid: &Grid<i32>) -> Vec<IVec2> {
+    let x = pos.x;
+    let y = pos.y;
+    [(x - 1, y), (x + 1, y), (x, y + 1), (x, y - 1)]
+        .into_iter()
+        .filter(|(x, y)| 0 <= *x && *x < grid.width && 0 <= *y && *y < grid.height)
+        .map(|(x, y)| ivec2(x, y))
+        .collect_vec()
+}
 
-    // we have do while at home
-    while {
-        //println!("iterating");
-        let positions = grid.iter().map(|(x, y, v)| (x, y, *v)).collect_vec();
-        let mut changed = false;
-        for (x, y, v) in &positions {
-            let neighbor_max = [
-                grid.get_clamped(x - 1, *y),
-                grid.get_clamped(x + 1, *y),
-                grid.get_clamped(*x, y + 1),
-                grid.get_clamped(*x, y - 1),
-            ]
-            .into_iter()
-            .max()
-            .unwrap();
-            if *neighbor_max > *v + 1 {
-                changed = true;
-                *grid.get_mut(*x, *y) = neighbor_max - 1;
+fn dijkstra(grid: &mut Grid<i32>, seed: &[IVec2]) {
+    let mut next: Vec<IVec2> = seed.iter().flat_map(
+        |pos| get_neighbors(*pos, grid)
+    ).collect_vec();
+
+    while !next.is_empty() {
+        let buffer = next.drain(..).collect_vec();
+        for pos in buffer.into_iter() {
+            let neighbor_max = {
+                get_neighbors(pos, grid)
+                    .into_iter()
+                    .map(|pos| grid.get_clamped(pos.x, pos.y))
+                    .max()
+                    .cloned()
+            };
+            if let Some(neighbor_max) = neighbor_max {
+                let v = *grid.get_clamped_v(pos);
+                if neighbor_max > v + 1 {
+                    let new_val = neighbor_max - 1;
+                    *grid.get_mut(pos.x, pos.y) = new_val;
+                    next.extend(
+                        get_neighbors(pos, grid)
+                            .into_iter()
+                            .filter(|pos| *grid.get(pos.x, pos.y) < new_val - 1),
+                    );
+                }
             }
         }
-        changed
-    } {}
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_neighbors_test() {
+        let grid = Grid::new(10,10,0);
+        let neighbors = get_neighbors(ivec2(1,1), &grid);
+        assert_eq!(4, neighbors.len());
+        assert!(neighbors.contains(&ivec2(0, 1)));
+        assert!(neighbors.contains(&ivec2(2, 1)));
+        assert!(neighbors.contains(&ivec2(1, 0)));
+        assert!(neighbors.contains(&ivec2(1, 2)));
+
+        let neighbors = get_neighbors(ivec2(0,0), &grid);
+        assert_eq!(2, neighbors.len());
+        assert!(neighbors.contains(&ivec2(0, 1)));
+        assert!(neighbors.contains(&ivec2(1, 0)));
+    }
+
+    #[test]
+    fn dijkstra_map_test() {
+        let mut grid = Grid::new(10,10,0);
+        let pos = ivec2(5,5);
+        *grid.get_clamped_mut(pos.x, pos.y) = 5;
+        dijkstra(&mut grid, &[pos]);
+        assert_eq!(3,*grid.get(3, 5));
+    }
 }
