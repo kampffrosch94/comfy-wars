@@ -228,8 +228,14 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         let pos = grid_world_pos(mouse_world());
         ui.label(format!("mouse world grid pos: {}", pos));
         let pos = ivec2(pos.x as _, -pos.y as _);
-        ui.label(format!("ground type {:?}", s.ground_grid.get_clamped_v(pos)));
-        ui.label(format!("terrain type {:?}", s.terrain_grid.get_clamped_v(pos)));
+        ui.label(format!(
+            "ground type {:?}",
+            s.ground_grid.get_clamped_v(pos)
+        ));
+        ui.label(format!(
+            "terrain type {:?}",
+            s.terrain_grid.get_clamped_v(pos)
+        ));
 
         ui.separator();
         ui.label("Entitiy transforms:");
@@ -249,8 +255,19 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
         s.grid.iter_values_mut().for_each(|v| *v = 0);
         let mg = grid_world_pos(mouse_world());
         let pos = ivec2(mg.x as _, -mg.y as _);
-        *s.grid.get_clamped_mut(pos.x, pos.y) = 5;
-        dijkstra(&mut s.grid, &[pos], |_| 1);
+        *s.grid.get_clamped_mut(pos.x, pos.y) = 9;
+        dijkstra(&mut s.grid, &[pos], |v| -> i32 {
+            let ground = *s.ground_grid.get_clamped_v(v);
+            let terrain = *s.terrain_grid.get_clamped_v(v);
+            match ground {
+                GroundType::Water => 9999,
+                GroundType::Ground => match terrain {
+                    TerrainType::None => 2,
+                    TerrainType::Street => 1,
+                    TerrainType::Forest => 3,
+                },
+            }
+        });
     }
 
     if s.ui.draw_dijkstra_map {
@@ -267,7 +284,9 @@ fn update(s: &mut GameState, c: &mut EngineContext) {
                 },
                 50,
             );
-            draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+            if *val > 0 {
+                draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+            }
         }
     }
 }
