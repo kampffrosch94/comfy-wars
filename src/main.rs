@@ -19,8 +19,9 @@ struct Unit;
 
 // constants for Z-layers
 const Z_GROUND: i32 = 0;
-const Z_TERRAIN: i32 = 1;
-const Z_UNITS: i32 = 10;
+const Z_MOVE_HIGHLIGHT: i32 = 9;
+const Z_TERRAIN: i32 = 10;
+const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
 #[derive(Debug, Default)]
@@ -195,6 +196,13 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
 
+    handle_input(s);
+    handle_debug_input(s);
+}
+
+/// relevant for the actual game
+/// also does drawing in immediate mode
+fn handle_input(s: &mut GameState) {
     if is_mouse_button_released(MouseButton::Right) {
         s.ui.right_click_menu_pos = Some(mouse_world());
     }
@@ -204,7 +212,7 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
         s.ui.selected_entitiy = None;
 
         for (e, (trans, _ut, _team)) in world_mut().query_mut::<(&Transform, &UnitType, &Team)>() {
-            // I am scared of flots
+            // I am scared of floats
             if pos.abs_diff_eq(trans.abs_position, 0.01) {
                 s.ui.selected_entitiy = Some(e);
             }
@@ -242,12 +250,37 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
             .query_one_mut::<(&Transform,)>(e)
             .map(|(trans,)| (trans.abs_position,))
             .unwrap();
+
         let pos = grid_world_pos(wpos);
-        draw_cursor(s, pos)
+        draw_cursor(s, pos);
+
+        let grid = &mut s.grids.dijkstra;
+        let gp = grid_pos(pos);
+        grid.iter_values_mut().for_each(|val| *val = 0);
+        grid[gp] = 9;
+        let cost = |v| -> i32 {
+            let ground = *s.grids.ground.get_clamped_v(v);
+            let terrain = *s.grids.terrain.get_clamped_v(v);
+            match ground {
+                GroundType::Water => 9999,
+                GroundType::Ground => match terrain {
+                    TerrainType::None => 2,
+                    TerrainType::Street => 1,
+                    TerrainType::Forest => 3,
+                },
+            }
+        };
+        dijkstra(grid, &[gp], cost);
+        let map = &s.grids.dijkstra;
+        draw_move_range(s, map);
     } else {
         draw_cursor(s, mouse_world())
     }
+}
 
+/// debug information and keybindings
+/// also does drawing in immediate mode
+fn handle_debug_input(s: &mut GameState) {
     egui::Window::new("kf_debug_info").show(egui(), |ui| {
         let pos = grid_world_pos(mouse_world());
         ui.label(format!("mouse world grid pos: {}", pos));
@@ -329,15 +362,20 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
 }
 
 fn draw_cursor(s: &GameState, pos: Vec2) {
+    cw_draw_sprite(s, "cursor", grid_world_pos(pos), Z_CURSOR);
+}
+
+/// comfy wars specific helper for drawing sprites
+fn cw_draw_sprite(s: &GameState, name: &str, pos: Vec2, z: i32) {
     draw_sprite_ex(
         texture_id("tilemap"),
-        grid_world_pos(pos),
+        pos,
         WHITE,
-        Z_CURSOR,
+        z,
         DrawTextureParams {
             dest_size: Some(vec2(1.0, 1.0).as_world_size()),
             source_rect: Some(IRect {
-                offset: ivec2(s.sprites["cursor"].x, s.sprites["cursor"].y),
+                offset: ivec2(s.sprites[name].x, s.sprites[name].y),
                 size: ivec2(GRIDSIZE, GRIDSIZE),
             }),
             ..Default::default()
@@ -345,9 +383,25 @@ fn draw_cursor(s: &GameState, pos: Vec2) {
     );
 }
 
+fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
+    for (x, y, v) in grid.iter() {
+        if *v > 0 {
+            let mut pos = ivec2(x, y).as_vec2();
+            pos.y *= -1.;
+            cw_draw_sprite(s, "move_range", pos, Z_MOVE_HIGHLIGHT);
+        }
+    }
+}
+
 fn grid_world_pos(v: Vec2) -> Vec2 {
     Vec2 {
         x: v.x.round(),
         y: v.y.round(),
     }
+}
+
+fn grid_pos(v: Vec2) -> IVec2 {
+    let mut r = grid_world_pos(v).as_ivec2();
+    r.y *= -1;
+    r
 }
