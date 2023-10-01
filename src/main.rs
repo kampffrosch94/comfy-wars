@@ -37,7 +37,7 @@ pub struct GameState {
 struct UIState {
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
-    selected_entitiy: Option<Entity>,
+    selected_entity: Option<Entity>,
 }
 
 #[derive(Debug)]
@@ -211,12 +211,12 @@ fn handle_input(s: &mut GameState) {
     if is_mouse_button_released(MouseButton::Left) {
         s.ui.right_click_menu_pos = None;
         let pos = grid_world_pos(mouse_world());
-        s.ui.selected_entitiy = None;
+        s.ui.selected_entity = None;
 
         for (e, (trans, _ut, _team)) in world_mut().query_mut::<(&Transform, &UnitType, &Team)>() {
             // I am scared of floats
             if pos.abs_diff_eq(trans.abs_position, 0.01) {
-                s.ui.selected_entitiy = Some(e);
+                s.ui.selected_entity = Some(e);
             }
         }
     }
@@ -247,7 +247,7 @@ fn handle_input(s: &mut GameState) {
                         }
                     });
             });
-    } else if let Some(e) = s.ui.selected_entitiy {
+    } else if let Some(e) = s.ui.selected_entity {
         let (wpos,) = world_mut()
             .query_one_mut::<(&Transform,)>(e)
             .map(|(trans,)| (trans.abs_position,))
@@ -299,7 +299,7 @@ fn handle_debug_input(s: &mut GameState) {
 
         ui.separator();
         ui.label("selected Entity:");
-        if let Some(e) = s.ui.selected_entitiy {
+        if let Some(e) = s.ui.selected_entity {
             let (wpos,) = world_mut()
                 .query_one_mut::<(&Transform,)>(e)
                 .map(|(trans,)| (trans.abs_position,))
@@ -322,25 +322,6 @@ fn handle_debug_input(s: &mut GameState) {
 
     if is_key_pressed(KeyCode::L) {
         s.ui.draw_dijkstra_map = !s.ui.draw_dijkstra_map;
-    }
-
-    {
-        s.grids.dijkstra.iter_values_mut().for_each(|v| *v = 0);
-        let mg = grid_world_pos(mouse_world());
-        let pos = ivec2(mg.x as _, -mg.y as _);
-        *s.grids.dijkstra.get_clamped_mut(pos.x, pos.y) = 9;
-        dijkstra(&mut s.grids.dijkstra, &[pos], |v| -> i32 {
-            let ground = *s.grids.ground.get_clamped_v(v);
-            let terrain = *s.grids.terrain.get_clamped_v(v);
-            match ground {
-                GroundType::Water => 9999,
-                GroundType::Ground => match terrain {
-                    TerrainType::None => 2,
-                    TerrainType::Street => 1,
-                    TerrainType::Forest => 3,
-                },
-            }
-        });
     }
 
     if s.ui.draw_dijkstra_map {
@@ -440,12 +421,6 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
             _ => panic!("should be impossible"),
         };
         cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW);
-        draw_text(
-            &format!("{:?}", game_to_world(pos)),
-            vec2(0., 0.),
-            WHITE,
-            TextAlign::Center,
-        );
     }
 }
 
