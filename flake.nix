@@ -25,6 +25,7 @@
           jq # extract stuff from json
           tracy # profiler, call with ~Tracy~
           cargo-flamegraph # more profiling :)
+          cargo-watch
           # cargo-llvm-lines
         ];
         # stuff we need to run
