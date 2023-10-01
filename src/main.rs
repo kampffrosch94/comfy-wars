@@ -21,7 +21,7 @@ struct Unit;
 const Z_GROUND: i32 = 0;
 const Z_TERRAIN: i32 = 10;
 const Z_MOVE_HIGHLIGHT: i32 = 11;
-const Z_MOVE_ARROW: i32 = Z_MOVE_HIGHLIGHT + 1;
+const Z_MOVE_ARROW: i32 = 12;
 const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
@@ -199,6 +199,7 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
 
     handle_input(s);
     handle_debug_input(s);
+    cw_draw_sprite(s, "arrow_w", game_to_world(ivec2(2, 2)), tweak!(1000));
 }
 
 /// relevant for the actual game
@@ -396,6 +397,11 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
 }
 
 fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
+    const DOWN: (i32, i32) = (0, 1);
+    const UP: (i32, i32) = (0, -1);
+    const RIGHT: (i32, i32) = (1, 0);
+    const LEFT: (i32, i32) = (-1, 0);
+
     let path = dijkstra_path(grid, gp);
     let mut iter = path.iter().rev();
     let prev = iter.next().cloned();
@@ -403,17 +409,8 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
     if let Some(mut prev) = prev {
         for pos in iter {
             let direction = (*pos - prev).into();
-            const DOWN: (i32, i32) = (0, 1);
-            const UP: (i32, i32) = (0, -1);
-            const RIGHT: (i32, i32) = (1, 0);
-            const LEFT: (i32, i32) = (-1, 0);
-            let sprite = match prev_direction {
-                None => match direction {
-                    UP | DOWN => "arrow_ns",
-                    LEFT | RIGHT => "arrow_we",
-                    _ => panic!("invalid direction"),
-                },
-                Some(prev_direction) => match (prev_direction, direction) {
+            if let Some(prev_direction) = prev_direction {
+                let sprite = match (prev_direction, direction) {
                     (LEFT, LEFT) | (RIGHT, RIGHT) => "arrow_we",
                     (UP, UP) | (DOWN, DOWN) => "arrow_ns",
                     (DOWN, RIGHT) | (LEFT, UP) => "arrow_ne",
@@ -421,12 +418,34 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
                     (DOWN, LEFT) | (RIGHT, UP) => "arrow_wn",
                     (UP, LEFT) | (RIGHT, DOWN) => "arrow_ws",
                     _ => panic!("should be impossible"),
-                },
-            };
-            cw_draw_sprite(s, sprite, game_to_world(*pos), Z_MOVE_ARROW);
+                };
+                cw_draw_sprite(s, sprite, game_to_world(prev), Z_MOVE_ARROW);
+            }
             prev = *pos;
             prev_direction = Some(direction);
         }
+    }
+
+    // draw ending arrow
+    let len = path.len();
+    if len >= 2 {
+        let prev = path[1];
+        let pos = path[0];
+        let direction: (i32, i32) = (pos - prev).into();
+        let sprite = match direction {
+            LEFT => "arrow_w",
+            RIGHT => "arrow_e",
+            DOWN => "arrow_s",
+            UP => "arrow_n",
+            _ => panic!("should be impossible"),
+        };
+        cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW);
+        draw_text(
+            &format!("{:?}", game_to_world(pos)),
+            vec2(0., 0.),
+            WHITE,
+            TextAlign::Center,
+        );
     }
 }
 
