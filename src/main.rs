@@ -5,7 +5,7 @@ use comfy::*;
 use data::*;
 use dijkstra::*;
 use grids::Grid;
-use koryto::{wait_seconds, Koryto};
+use koryto::{wait_seconds, yield_frame, Koryto};
 use loading::*;
 use nanoserde::*;
 
@@ -283,17 +283,26 @@ fn handle_input(s: &mut GameState) {
         let map = &s.grids.dijkstra;
         draw_move_range(s, map);
         let path = draw_move_path(s, map, mouse_game_grid());
-        if is_mouse_button_pressed(MouseButton::Left) {
-            println!("Starting coroutine.");
+        if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0{
             s.koryto.start(async move {
-                println!("Inside coroutine");
                 for pos in path.iter().rev() {
-                    println!("Coroutine is running");
-                    if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
-                        transform.abs_position = game_to_world(*pos);
-                        transform.position = game_to_world(*pos);
+                    let target = game_to_world(*pos);
+                    let mut s = 0.;
+                    while s < 1. {
+                        s += delta() * 25.;
+                        if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
+                            transform.position = transform.position.lerp(target, s);
+                        } else {
+                            panic!("can't borrow world");
+                        }
+                        yield_frame().await;
                     }
-                    wait_seconds(0.25).await;
+                }
+                let target = game_to_world(path[0]);
+                if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
+                    transform.position = target;
+                } else {
+                    panic!("can't borrow world");
                 }
             });
         }
