@@ -35,6 +35,7 @@ pub struct GameState {
 struct UIState {
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
+    selected_entitiy: Option<Entity>,
 }
 
 #[derive(Debug)]
@@ -194,11 +195,20 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
 
-    if is_mouse_button_down(MouseButton::Right) {
+    if is_mouse_button_released(MouseButton::Right) {
         s.ui.right_click_menu_pos = Some(mouse_world());
     }
-    if is_mouse_button_down(MouseButton::Left) {
+    if is_mouse_button_released(MouseButton::Left) {
         s.ui.right_click_menu_pos = None;
+        let pos = grid_world_pos(mouse_world());
+        s.ui.selected_entitiy = None;
+
+        for (e, (trans, _ut, _team)) in world_mut().query_mut::<(&Transform, &UnitType, &Team)>() {
+            // I am scared of flots
+            if pos.abs_diff_eq(trans.abs_position, 0.01) {
+                s.ui.selected_entitiy = Some(e);
+            }
+        }
     }
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
@@ -227,6 +237,13 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
                         }
                     });
             });
+    } else if let Some(e) = s.ui.selected_entitiy {
+        let (wpos,) = world_mut()
+            .query_one_mut::<(&Transform,)>(e)
+            .map(|(trans,)| (trans.abs_position,))
+            .unwrap();
+        let pos = grid_world_pos(wpos);
+        draw_cursor(s, pos)
     } else {
         draw_cursor(s, mouse_world())
     }
@@ -243,6 +260,19 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
             "terrain type {:?}",
             s.grids.terrain.get_clamped_v(pos)
         ));
+
+        ui.separator();
+        ui.label("selected Entity:");
+        if let Some(e) = s.ui.selected_entitiy {
+            let (wpos,) = world_mut()
+                .query_one_mut::<(&Transform,)>(e)
+                .map(|(trans,)| (trans.abs_position,))
+                .unwrap();
+            let pos = grid_world_pos(wpos);
+            ui.label(format!("position {:?}", pos));
+        } else {
+            ui.label("None");
+        }
 
         ui.separator();
         ui.label("Entitiy transforms:");
