@@ -398,7 +398,7 @@ dependencies = [
 [[package]]
 name = "comfy"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#8c6cb218105444bc187c1b840f126fbf72d12cd7"
+source = "git+https://github.com/darthdeus/comfy#f1d6d90f586d639a2e9b1062eb5f2592407acc6a"
 dependencies = [
  "comfy-core",
  "comfy-wgpu",
@@ -418,7 +418,7 @@ dependencies = [
 [[package]]
 name = "comfy-core"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#8c6cb218105444bc187c1b840f126fbf72d12cd7"
+source = "git+https://github.com/darthdeus/comfy#f1d6d90f586d639a2e9b1062eb5f2592407acc6a"
 dependencies = [
  "anymap",
  "atomic_refcell",
@@ -437,6 +437,7 @@ dependencies = [
  "egui-winit",
  "env_logger",
  "epaint",
+ "fxhash",
  "getrandom",
  "glam",
  "hecs",
@@ -496,7 +497,7 @@ dependencies = [
 [[package]]
 name = "comfy-wgpu"
 version = "0.1.2"
-source = "git+https://github.com/darthdeus/comfy#8c6cb218105444bc187c1b840f126fbf72d12cd7"
+source = "git+https://github.com/darthdeus/comfy#f1d6d90f586d639a2e9b1062eb5f2592407acc6a"
 dependencies = [
  "bytemuck",
  "comfy-core",
@@ -863,9 +864,9 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "errno"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "136526188508e25c6fef639d7927dfb3e0e3084488bf202267829cf7fc23dbdd"
+checksum = "add4f07d43996f76ef320709726a556a9d4f965d9410d8d0271132d2f8293480"
 dependencies = [
  "errno-dragonfly",
  "libc",
@@ -935,6 +936,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76ee7a02da4d231650c7cea31349b889be2f45ddb3ef3032d2ec8185f6313fd2"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
 ]
 
 [[package]]
@@ -1415,9 +1425,9 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "memchr"
-version = "2.6.3"
+version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f232d6ef707e1956a43342693d2a31e72989554d58299d7a88738cc95b0d35c"
+checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
 name = "memmap2"
