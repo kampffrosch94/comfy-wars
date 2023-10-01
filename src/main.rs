@@ -19,8 +19,8 @@ struct Unit;
 
 // constants for Z-layers
 const Z_GROUND: i32 = 0;
-const Z_MOVE_HIGHLIGHT: i32 = 9;
 const Z_TERRAIN: i32 = 10;
+const Z_MOVE_HIGHLIGHT: i32 = 11;
 const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
