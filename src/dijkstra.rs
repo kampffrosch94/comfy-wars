@@ -44,6 +44,34 @@ pub fn dijkstra<F: Fn(IVec2) -> i32>(grid: &mut Grid<i32>, seed: &[IVec2], cost:
     }
 }
 
+pub fn dijkstra_path(grid: &Grid<i32>, start: IVec2) -> Vec<IVec2> {
+    let mut path = Vec::new();
+    let mut pos = start;
+    let mut v = grid[pos];
+    if v <= 0 {
+        return path;
+    }
+    path.push(start);
+    // do while at home
+    while {
+        // neighbor with maximum value
+        let (npos, nv) = get_neighbors(pos, grid)
+            .into_iter()
+            .map(|npos| (npos, grid[npos]))
+            .max_by_key(|(_, v)| *v)
+            .unwrap();
+        if nv > v {
+            path.push(npos);
+            pos = npos;
+            v = nv;
+            true
+        } else {
+            false
+        }
+    } {}
+    path
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

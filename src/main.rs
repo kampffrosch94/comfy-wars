@@ -21,6 +21,7 @@ struct Unit;
 const Z_GROUND: i32 = 0;
 const Z_TERRAIN: i32 = 10;
 const Z_MOVE_HIGHLIGHT: i32 = 11;
+const Z_MOVE_ARROW: i32 = Z_MOVE_HIGHLIGHT + 1;
 const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
@@ -273,6 +274,7 @@ fn handle_input(s: &mut GameState) {
         dijkstra(grid, &[gp], cost);
         let map = &s.grids.dijkstra;
         draw_move_range(s, map);
+        draw_move_path(s, map, mouse_game_grid());
     } else {
         draw_cursor(s, mouse_world())
     }
@@ -393,6 +395,41 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
     }
 }
 
+fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
+    let path = dijkstra_path(grid, gp);
+    let mut iter = path.iter().rev();
+    let prev = iter.next().cloned();
+    let mut prev_direction: Option<(i32, i32)> = None;
+    if let Some(mut prev) = prev {
+        for pos in iter {
+            let direction = (*pos - prev).into();
+            const DOWN: (i32, i32) = (0, 1);
+            const UP: (i32, i32) = (0, -1);
+            const RIGHT: (i32, i32) = (1, 0);
+            const LEFT: (i32, i32) = (-1, 0);
+            let sprite = match prev_direction {
+                None => match direction {
+                    UP | DOWN => "arrow_ns",
+                    LEFT | RIGHT => "arrow_we",
+                    _ => panic!("invalid direction"),
+                },
+                Some(prev_direction) => match (prev_direction, direction) {
+                    (LEFT, LEFT) | (RIGHT, RIGHT) => "arrow_we",
+                    (UP, UP) | (DOWN, DOWN) => "arrow_ns",
+                    (DOWN, RIGHT) | (LEFT, UP) => "arrow_ne",
+                    (UP, RIGHT) | (LEFT, DOWN) => "arrow_se",
+                    (DOWN, LEFT) | (RIGHT, UP) => "arrow_wn",
+                    (UP, LEFT) | (RIGHT, DOWN) => "arrow_ws",
+                    _ => panic!("should be impossible"),
+                },
+            };
+            cw_draw_sprite(s, sprite, game_to_world(*pos), Z_MOVE_ARROW);
+            prev = *pos;
+            prev_direction = Some(direction);
+        }
+    }
+}
+
 fn grid_world_pos(v: Vec2) -> Vec2 {
     Vec2 {
         x: v.x.round(),
@@ -404,4 +441,17 @@ fn grid_pos(v: Vec2) -> IVec2 {
     let mut r = grid_world_pos(v).as_ivec2();
     r.y *= -1;
     r
+}
+
+fn word_to_game(v: Vec2) -> IVec2 {
+    let v = grid_world_pos(v);
+    ivec2(v.x as _, -v.y as _)
+}
+
+fn game_to_world(v: IVec2) -> Vec2 {
+    vec2(v.x as _, -v.y as _)
+}
+
+fn mouse_game_grid() -> IVec2 {
+    word_to_game(mouse_world())
 }
