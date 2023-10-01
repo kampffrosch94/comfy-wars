@@ -5,6 +5,7 @@ use comfy::*;
 use data::*;
 use dijkstra::*;
 use grids::Grid;
+use koryto::{wait_seconds, Koryto};
 use loading::*;
 use nanoserde::*;
 
@@ -25,12 +26,12 @@ const Z_MOVE_ARROW: i32 = 12;
 const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
-#[derive(Debug, Default)]
 pub struct GameState {
     ui: UIState,
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
+    koryto: Koryto,
 }
 
 #[derive(Debug, Default)]
@@ -59,7 +60,13 @@ impl Default for Grids {
 
 impl GameState {
     pub fn new(_c: &mut EngineContext) -> Self {
-        Self::default()
+        Self {
+            ui: Default::default(),
+            sprites: Default::default(),
+            entity_defs: Default::default(),
+            grids: Default::default(),
+            koryto: Koryto::new(),
+        }
     }
 }
 
@@ -197,9 +204,9 @@ fn update(s: &mut GameState, _c: &mut EngineContext) {
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
 
+    s.koryto.poll_coroutines(delta());
     handle_input(s);
     handle_debug_input(s);
-    cw_draw_sprite(s, "arrow_w", game_to_world(ivec2(2, 2)), tweak!(1000));
 }
 
 /// relevant for the actual game
@@ -275,7 +282,21 @@ fn handle_input(s: &mut GameState) {
         dijkstra(grid, &[gp], cost);
         let map = &s.grids.dijkstra;
         draw_move_range(s, map);
-        draw_move_path(s, map, mouse_game_grid());
+        let path = draw_move_path(s, map, mouse_game_grid());
+        if is_mouse_button_pressed(MouseButton::Left) {
+            println!("Starting coroutine.");
+            s.koryto.start(async move {
+                println!("Inside coroutine");
+                for pos in path.iter().rev() {
+                    println!("Coroutine is running");
+                    if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
+                        transform.abs_position = game_to_world(*pos);
+                        transform.position = game_to_world(*pos);
+                    }
+                    wait_seconds(0.25).await;
+                }
+            });
+        }
     } else {
         draw_cursor(s, mouse_world())
     }
@@ -377,7 +398,7 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
     }
 }
 
-fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
+fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) -> Vec<IVec2> {
     const DOWN: (i32, i32) = (0, 1);
     const UP: (i32, i32) = (0, -1);
     const RIGHT: (i32, i32) = (1, 0);
@@ -422,6 +443,7 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) {
         };
         cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW);
     }
+    return path;
 }
 
 fn grid_world_pos(v: Vec2) -> Vec2 {

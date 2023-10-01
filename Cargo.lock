@@ -488,6 +488,7 @@ version = "0.1.0"
 dependencies = [
  "comfy",
  "grids",
+ "koryto",
  "nanoserde",
  "winit",
 ]
@@ -1297,6 +1298,15 @@ dependencies = [
  "mint",
  "ringbuf",
  "symphonia",
+]
+
+[[package]]
+name = "koryto"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ebaea37d1920bbb49edfcd2c6fe9ca85a6ad0f0ba2debfa3f8acd9806203a1f"
+dependencies = [
+ "thunderdome",
 ]
 
 [[package]]
