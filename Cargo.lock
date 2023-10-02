@@ -488,6 +488,7 @@ name = "comfy-wars"
 version = "0.1.0"
 dependencies = [
  "comfy",
+ "cosync",
  "grids",
  "koryto",
  "nanoserde",
@@ -615,6 +616,12 @@ checksum = "d8478e5bdad14dce236b9898ea002eabfa87cbe14f0aa538dbe3b6a4bec4332d"
 dependencies = [
  "bindgen",
 ]
+
+[[package]]
+name = "cosync"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d47649af58ee81899f9b6236e99e8231af0437f7d6171728c6098d93018cc2a"
 
 [[package]]
 name = "cpal"

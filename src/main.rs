@@ -2,6 +2,7 @@ mod data;
 mod dijkstra;
 mod loading;
 use comfy::*;
+use cosync::{Cosync, CosyncQueueHandle};
 use data::*;
 use dijkstra::*;
 use grids::Grid;
@@ -9,7 +10,7 @@ use koryto::{yield_frame, Koryto};
 use loading::*;
 use nanoserde::*;
 
-simple_game!("comfy wars", GameState, setup, update);
+simple_game!("comfy wars", GameWrapper, setup, update);
 
 /// ECS marker
 struct Ground;
@@ -26,12 +27,29 @@ const Z_MOVE_ARROW: i32 = 12;
 const Z_UNITS: i32 = 20;
 const Z_CURSOR: i32 = 1000;
 
+pub struct GameWrapper {
+    cosync: Cosync<GameState>,
+    game_state: GameState,
+}
+
+impl GameWrapper {
+    pub fn new(c: &mut EngineContext) -> Self {
+        let cosync = Cosync::new();
+        let handle = cosync.create_queue_handle();
+        Self {
+            cosync,
+            game_state: GameState::new(c, handle),
+        }
+    }
+}
+
 pub struct GameState {
     ui: UIState,
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
     koryto: Koryto,
+    co: cosync::CosyncQueueHandle<GameState>,
 }
 
 #[derive(Debug, Default)]
@@ -62,13 +80,14 @@ impl Default for Grids {
 }
 
 impl GameState {
-    pub fn new(_c: &mut EngineContext) -> Self {
+    pub fn new(_c: &mut EngineContext, co: CosyncQueueHandle<GameState>) -> Self {
         Self {
             ui: Default::default(),
             sprites: Default::default(),
             entity_defs: Default::default(),
             grids: Default::default(),
             koryto: Koryto::new(),
+            co,
         }
     }
 }
@@ -92,7 +111,8 @@ enum TerrainType {
 
 const GRIDSIZE: i32 = 16;
 
-fn setup(s: &mut GameState, c: &mut EngineContext) {
+fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
+    let s = &mut s.game_state;
     // load tiles
     let ldtk: LDTK = DeJson::deserialize_json(kf_include_str!("/assets/comfy_wars.ldtk")).unwrap();
     {
@@ -193,8 +213,11 @@ fn setup(s: &mut GameState, c: &mut EngineContext) {
     }
 }
 
-fn update(s: &mut GameState, _c: &mut EngineContext) {
+fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
     span_with_timing!("kf/update");
+    let co = &mut s.cosync;
+    let s = &mut s.game_state;
+    co.run_until_stall(s);
     clear_background(TEAL);
     let mut visuals = egui::Visuals::dark();
     visuals.window_shadow = epaint::Shadow {
@@ -287,7 +310,7 @@ fn handle_input(s: &mut GameState) {
         draw_move_range(s, map);
         let path = draw_move_path(s, map, mouse_game_grid());
         if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
-            s.koryto.start(async move {
+            s.co.queue(move |mut _s| async move {
                 for pos in path.iter().rev() {
                     let target = game_to_world(*pos);
                     let mut s = 0.;
@@ -298,7 +321,7 @@ fn handle_input(s: &mut GameState) {
                         } else {
                             panic!("can't borrow world");
                         }
-                        yield_frame().await;
+                        cosync::sleep_ticks(1).await;
                     }
                 }
                 let target = game_to_world(path[0]);
