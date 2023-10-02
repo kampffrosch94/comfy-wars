@@ -5,7 +5,7 @@ use comfy::*;
 use data::*;
 use dijkstra::*;
 use grids::Grid;
-use koryto::{wait_seconds, yield_frame, Koryto};
+use koryto::{yield_frame, Koryto};
 use loading::*;
 use nanoserde::*;
 
@@ -41,6 +41,9 @@ struct UIState {
     selected_entity: Option<Entity>,
 }
 
+/// all grids in here have the same dimensions
+/// bigger x is right
+/// bigger y is down (reverse of what comfy uses atm)
 #[derive(Debug)]
 struct Grids {
     dijkstra: Grid<i32>,
@@ -283,7 +286,7 @@ fn handle_input(s: &mut GameState) {
         let map = &s.grids.dijkstra;
         draw_move_range(s, map);
         let path = draw_move_path(s, map, mouse_game_grid());
-        if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0{
+        if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
             s.koryto.start(async move {
                 for pos in path.iter().rev() {
                     let target = game_to_world(*pos);
