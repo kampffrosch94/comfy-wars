@@ -12,8 +12,8 @@ winit = {version = "*", features = ["wayland"]}
 
 nanoserde = "0.1.35"
 grids = "0.2.3"
-koryto = "0.1.1"
 cosync = "0.2.1"
+thunderdome = "0.6.1"
 
 [profile.dev]
 opt-level = 1

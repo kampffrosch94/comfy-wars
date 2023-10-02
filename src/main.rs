@@ -1,12 +1,12 @@
 mod data;
 mod dijkstra;
 mod loading;
+
 use comfy::*;
 use cosync::{Cosync, CosyncQueueHandle};
 use data::*;
 use dijkstra::*;
 use grids::Grid;
-use koryto::{yield_frame, Koryto};
 use loading::*;
 use nanoserde::*;
 
@@ -16,8 +16,6 @@ simple_game!("comfy wars", GameWrapper, setup, update);
 struct Ground;
 /// ECS marker
 struct Infrastructure;
-/// ECS marker
-struct Unit;
 
 // constants for Z-layers
 const Z_GROUND: i32 = 0;
@@ -44,19 +42,32 @@ impl GameWrapper {
 }
 
 pub struct GameState {
+    co: CosyncQueueHandle<GameState>,
     ui: UIState,
     sprites: HashMap<String, SpriteData>,
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
-    koryto: Koryto,
-    co: cosync::CosyncQueueHandle<GameState>,
+    entities: Arena<Actor>,
+}
+
+impl GameState {
+    pub fn new(_c: &mut EngineContext, co: CosyncQueueHandle<GameState>) -> Self {
+        Self {
+            ui: Default::default(),
+            sprites: Default::default(),
+            entity_defs: Default::default(),
+            grids: Default::default(),
+            co,
+            entities: Arena::new(),
+        }
+    }
 }
 
 #[derive(Debug, Default)]
 struct UIState {
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
-    selected_entity: Option<Entity>,
+    selected_entity: Option<Index>,
 }
 
 /// all grids in here have the same dimensions
@@ -79,19 +90,6 @@ impl Default for Grids {
     }
 }
 
-impl GameState {
-    pub fn new(_c: &mut EngineContext, co: CosyncQueueHandle<GameState>) -> Self {
-        Self {
-            ui: Default::default(),
-            sprites: Default::default(),
-            entity_defs: Default::default(),
-            grids: Default::default(),
-            koryto: Koryto::new(),
-            co,
-        }
-    }
-}
-
 /// used for determining movement cost
 #[derive(Debug, Default, Clone, Copy)]
 enum GroundType {
@@ -107,6 +105,15 @@ enum TerrainType {
     None,
     Street,
     Forest,
+}
+
+#[derive(Debug)]
+struct Actor {
+    pos: IVec2,
+    draw_pos: Vec2,
+    sprite_coords: IVec2,
+    team: Team,
+    unit_type: UnitType,
 }
 
 const GRIDSIZE: i32 = 16;
@@ -198,18 +205,13 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
 
     for me in map_entities {
         let def = &s.entity_defs[&me.def];
-        commands().spawn((
-            Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_UNITS, WHITE).with_rect(
-                def.sprite.x,
-                def.sprite.y,
-                GRIDSIZE,
-                GRIDSIZE,
-            ),
-            Transform::position(vec2(me.pos[0] as f32, -me.pos[1] as f32)),
-            Unit,
-            def.team,
-            def.unit_type,
-        ));
+        s.entities.insert(Actor {
+            pos: me.pos.into(),
+            draw_pos: vec2(me.pos[0] as f32, -me.pos[1] as f32),
+            sprite_coords: ivec2(def.sprite.x, def.sprite.y),
+            team: def.team,
+            unit_type: def.unit_type,
+        });
     }
 }
 
@@ -230,7 +232,6 @@ fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
 
-    s.koryto.poll_coroutines(delta());
     handle_input(s);
     handle_debug_input(s);
 }
@@ -246,10 +247,10 @@ fn handle_input(s: &mut GameState) {
         let pos = grid_world_pos(mouse_world());
         s.ui.selected_entity = None;
 
-        for (e, (trans, _ut, _team)) in world_mut().query_mut::<(&Transform, &UnitType, &Team)>() {
+        for (key, actor) in s.entities.iter() {
             // I am scared of floats
-            if pos.abs_diff_eq(trans.abs_position, 0.01) {
-                s.ui.selected_entity = Some(e);
+            if pos.abs_diff_eq(actor.draw_pos, 0.01) {
+                s.ui.selected_entity = Some(key);
             }
         }
     }
@@ -266,7 +267,6 @@ fn handle_input(s: &mut GameState) {
                         for (name, sprite) in s.sprites.iter().sorted_by_key(|s| s.0) {
                             if ui.button(name).clicked() {
                                 commands().spawn((
-                                    Unit,
                                     Transform::position(grid_world_pos(wpos)),
                                     Sprite::new(
                                         "tilemap".to_string(),
@@ -281,12 +281,7 @@ fn handle_input(s: &mut GameState) {
                     });
             });
     } else if let Some(e) = s.ui.selected_entity {
-        let (wpos,) = world_mut()
-            .query_one_mut::<(&Transform,)>(e)
-            .map(|(trans,)| (trans.abs_position,))
-            .unwrap();
-
-        let pos = grid_world_pos(wpos);
+        let pos = s.entities[e].draw_pos;
         draw_cursor(s, pos);
 
         let grid = &mut s.grids.dijkstra;
@@ -310,30 +305,48 @@ fn handle_input(s: &mut GameState) {
         draw_move_range(s, map);
         let path = draw_move_path(s, map, mouse_game_grid());
         if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
-            s.co.queue(move |mut _s| async move {
+            s.co.queue(move |mut s| async move {
                 for pos in path.iter().rev() {
                     let target = game_to_world(*pos);
-                    let mut s = 0.;
-                    while s < 1. {
-                        s += delta() * 25.;
-                        if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
-                            transform.position = transform.position.lerp(target, s);
-                        } else {
-                            panic!("can't borrow world");
+                    let mut lerpiness = 0.;
+                    while lerpiness < 1. {
+                        lerpiness += delta() * 25.;
+                        {
+                            let s = &mut s.get();
+                            let drawpos = &mut s.entities[e].draw_pos;
+                            *drawpos = drawpos.lerp(target, lerpiness);
                         }
                         cosync::sleep_ticks(1).await;
                     }
                 }
                 let target = game_to_world(path[0]);
-                if let Ok(transform) = world_mut().query_one_mut::<&mut Transform>(e) {
-                    transform.position = target;
-                } else {
-                    panic!("can't borrow world");
+                {
+                    let s = &mut s.get();
+                    let drawpos = &mut s.entities[e].draw_pos;
+                    *drawpos = target;
                 }
             });
         }
     } else {
         draw_cursor(s, mouse_world())
+    }
+
+    // draw actors
+    for (_index, actor) in s.entities.iter() {
+        draw_sprite_ex(
+            texture_id("tilemap"),
+            actor.draw_pos,
+            WHITE,
+            Z_UNITS,
+            DrawTextureParams {
+                dest_size: Some(vec2(1.0, 1.0).as_world_size()),
+                source_rect: Some(IRect {
+                    offset: actor.sprite_coords,
+                    size: ivec2(GRIDSIZE, GRIDSIZE),
+                }),
+                ..Default::default()
+            },
+        );
     }
 }
 
@@ -356,11 +369,7 @@ fn handle_debug_input(s: &mut GameState) {
         ui.separator();
         ui.label("selected Entity:");
         if let Some(e) = s.ui.selected_entity {
-            let (wpos,) = world_mut()
-                .query_one_mut::<(&Transform,)>(e)
-                .map(|(trans,)| (trans.abs_position,))
-                .unwrap();
-            let pos = grid_world_pos(wpos);
+            let pos = s.entities[e].pos;
             ui.label(format!("position {:?}", pos));
         } else {
             ui.label("None");
@@ -368,10 +377,10 @@ fn handle_debug_input(s: &mut GameState) {
 
         ui.separator();
         ui.label("Entitiy transforms:");
-        for (_, (trans, ut)) in world().query::<(&Transform, &UnitType)>().iter() {
+        for (_index, actor) in s.entities.iter() {
             ui.label(format!(
                 "{:?}: {},{}",
-                ut, trans.position.x, trans.position.y
+                actor.unit_type, actor.draw_pos.x, actor.draw_pos.y
             ));
         }
     });
