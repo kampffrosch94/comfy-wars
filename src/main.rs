@@ -58,7 +58,7 @@ impl GameState {
             entity_defs: Default::default(),
             grids: Default::default(),
             co,
-            entities: Arena::new(),
+            entities: Default::default(),
         }
     }
 }
@@ -68,6 +68,15 @@ struct UIState {
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
     selected_entity: Option<Index>,
+    move_state: MoveState,
+}
+
+#[derive(Default, Debug, PartialEq, Eq)]
+enum MoveState {
+    #[default]
+    None,
+    Moving,
+    Confirm,
 }
 
 /// all grids in here have the same dimensions
@@ -242,7 +251,7 @@ fn handle_input(s: &mut GameState) {
     if is_mouse_button_released(MouseButton::Right) {
         s.ui.right_click_menu_pos = Some(mouse_world());
     }
-    if is_mouse_button_released(MouseButton::Left) {
+    if is_mouse_button_released(MouseButton::Left) && s.ui.move_state == MoveState::None {
         s.ui.right_click_menu_pos = None;
         let pos = grid_world_pos(mouse_world());
         s.ui.selected_entity = None;
@@ -280,52 +289,70 @@ fn handle_input(s: &mut GameState) {
                         }
                     });
             });
-    } else if let Some(e) = s.ui.selected_entity {
-        let pos = s.entities[e].draw_pos;
-        draw_cursor(s, pos);
+    }
 
-        let grid = &mut s.grids.dijkstra;
-        let gp = grid_pos(pos);
-        grid.iter_values_mut().for_each(|val| *val = 0);
-        grid[gp] = 9;
-        let cost = |v| -> i32 {
-            let ground = *s.grids.ground.get_clamped_v(v);
-            let terrain = *s.grids.terrain.get_clamped_v(v);
-            match ground {
-                GroundType::Water => 9999,
-                GroundType::Ground => match terrain {
-                    TerrainType::None => 2,
-                    TerrainType::Street => 1,
-                    TerrainType::Forest => 3,
-                },
-            }
-        };
-        dijkstra(grid, &[gp], cost);
-        let map = &s.grids.dijkstra;
-        draw_move_range(s, map);
-        let path = draw_move_path(s, map, mouse_game_grid());
-        if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
-            s.co.queue(move |mut s| async move {
-                for pos in path.iter().rev() {
-                    let target = game_to_world(*pos);
-                    let mut lerpiness = 0.;
-                    while lerpiness < 1. {
-                        lerpiness += delta() * 25.;
-                        {
-                            let s = &mut s.get();
-                            let drawpos = &mut s.entities[e].draw_pos;
-                            *drawpos = drawpos.lerp(target, lerpiness);
+    if let Some(e) = s.ui.selected_entity {
+        if s.ui.move_state == MoveState::None {
+            let pos = s.entities[e].draw_pos;
+            draw_cursor(s, pos);
+
+            let grid = &mut s.grids.dijkstra;
+            let gp = grid_pos(pos);
+            grid.iter_values_mut().for_each(|val| *val = 0);
+            grid[gp] = 9;
+            let cost = |v| -> i32 {
+                let ground = *s.grids.ground.get_clamped_v(v);
+                let terrain = *s.grids.terrain.get_clamped_v(v);
+                match ground {
+                    GroundType::Water => 9999,
+                    GroundType::Ground => match terrain {
+                        TerrainType::None => 2,
+                        TerrainType::Street => 1,
+                        TerrainType::Forest => 3,
+                    },
+                }
+            };
+            dijkstra(grid, &[gp], cost);
+            let map = &s.grids.dijkstra;
+            draw_move_range(s, map);
+            let path = draw_move_path(s, map, mouse_game_grid());
+            if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
+                s.ui.move_state = MoveState::Moving;
+                s.co.queue(move |mut s| async move {
+                    for pos in path.iter().rev() {
+                        let target = game_to_world(*pos);
+                        let mut lerpiness = 0.;
+                        while lerpiness < 1. {
+                            lerpiness += delta() * 25.;
+                            {
+                                let s = &mut s.get();
+                                let drawpos = &mut s.entities[e].draw_pos;
+                                *drawpos = drawpos.lerp(target, lerpiness);
+                            }
+                            cosync::sleep_ticks(1).await;
                         }
-                        cosync::sleep_ticks(1).await;
                     }
-                }
-                let target = game_to_world(path[0]);
-                {
+                    let target = game_to_world(path[0]);
                     let s = &mut s.get();
-                    let drawpos = &mut s.entities[e].draw_pos;
-                    *drawpos = target;
-                }
-            });
+                    s.entities[e].draw_pos = target;
+                    s.ui.move_state = MoveState::Confirm;
+                });
+            }
+        }
+        if s.ui.move_state == MoveState::Confirm {
+            let pos = world_to_screen(s.entities[e].draw_pos);
+            egui::Area::new("move confirmation")
+                .fixed_pos(egui::pos2(pos.x, pos.y))
+                .show(egui(), |ui| {
+                    egui::Frame::none()
+                        .fill(egui::Color32::BLACK)
+                        .show(ui, |ui| {
+                            if ui.button("Wait").clicked() {
+                                s.ui.selected_entity = None;
+                                s.ui.move_state = MoveState::None;
+                            }
+                        })
+                });
         }
     } else {
         draw_cursor(s, mouse_world())
@@ -374,6 +401,8 @@ fn handle_debug_input(s: &mut GameState) {
         } else {
             ui.label("None");
         }
+        ui.separator();
+        ui.label(format!("Move State: {:?}", s.ui.move_state));
 
         ui.separator();
         ui.label("Entitiy transforms:");
