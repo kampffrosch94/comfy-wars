@@ -1,12 +1,14 @@
 mod data;
 mod dijkstra;
+mod game;
 mod loading;
 
 use comfy::*;
 use cosync::{Cosync, CosyncQueueHandle};
 use data::*;
 use dijkstra::*;
-use grids::Grid;
+use game::*;
+use grids::*;
 use loading::*;
 use nanoserde::*;
 
@@ -97,32 +99,6 @@ impl Default for Grids {
             terrain: Grid::new(0, 0, Default::default()),
         }
     }
-}
-
-/// used for determining movement cost
-#[derive(Debug, Default, Clone, Copy)]
-enum GroundType {
-    #[default]
-    Ground,
-    Water,
-}
-
-/// used for determining movement cost
-#[derive(Debug, Default, Clone, Copy)]
-enum TerrainType {
-    #[default]
-    None,
-    Street,
-    Forest,
-}
-
-#[derive(Debug)]
-struct Actor {
-    pos: IVec2,
-    draw_pos: Vec2,
-    sprite_coords: IVec2,
-    team: Team,
-    unit_type: UnitType,
 }
 
 const GRIDSIZE: i32 = 16;
@@ -335,6 +311,7 @@ fn handle_input(s: &mut GameState) {
                     let target = game_to_world(path[0]);
                     let s = &mut s.get();
                     s.entities[e].draw_pos = target;
+                    s.entities[e].pos = path[0];
                     s.ui.move_state = MoveState::Confirm;
                 });
             }
@@ -347,9 +324,20 @@ fn handle_input(s: &mut GameState) {
                     egui::Frame::none()
                         .fill(egui::Color32::BLACK)
                         .show(ui, |ui| {
+                            // TODO escape or right click reset to start
                             if ui.button("Wait").clicked() {
                                 s.ui.selected_entity = None;
                                 s.ui.move_state = MoveState::None;
+                            }
+
+                            // check if unit from other team is in range
+                            let enemies = enemies_in_range(s, e);
+                            if enemies.len() > 0 {
+                                if ui.button("Attack").clicked() {
+                                    // TODO attack
+                                    s.ui.selected_entity = None;
+                                    s.ui.move_state = MoveState::None;
+                                }
                             }
                         })
                 });

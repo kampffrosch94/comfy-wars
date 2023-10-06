@@ -1,7 +1,7 @@
 use comfy::{ivec2, IVec2, Itertools};
 use grids::Grid;
 
-pub fn get_neighbors(pos: IVec2, grid: &Grid<i32>) -> Vec<IVec2> {
+pub fn get_neighbors<T>(pos: IVec2, grid: &Grid<T>) -> Vec<IVec2> {
     let x = pos.x;
     let y = pos.y;
     [(x - 1, y), (x + 1, y), (x, y + 1), (x, y - 1)]

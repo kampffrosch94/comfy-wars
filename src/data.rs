@@ -1,6 +1,7 @@
 /// stuff loaded from ldtk and co
 use nanoserde::*;
 use grids::Grid;
+use crate::*;
 
 #[derive(DeJson, Debug)]
 pub struct SpriteData {
@@ -8,17 +9,6 @@ pub struct SpriteData {
     pub y: i32,
 }
 
-#[derive(DeJson, Debug, Clone, Copy)]
-pub enum Team {
-    Blue,
-    Red,
-}
-
-#[derive(DeJson, Debug, Clone, Copy)]
-pub enum UnitType {
-    Infantry,
-    Tank,
-}
 
 #[derive(DeJson, Debug)]
 pub struct EntityDef {
