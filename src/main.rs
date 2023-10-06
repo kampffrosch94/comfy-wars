@@ -24,7 +24,8 @@ const Z_GROUND: i32 = 0;
 const Z_TERRAIN: i32 = 10;
 const Z_MOVE_HIGHLIGHT: i32 = 11;
 const Z_MOVE_ARROW: i32 = 12;
-const Z_UNITS: i32 = 20;
+const Z_UNIT: i32 = 20;
+const Z_UNIT_HP: i32 = 21;
 const Z_CURSOR: i32 = 1000;
 
 pub struct GameWrapper {
@@ -260,7 +261,7 @@ fn handle_input(s: &mut GameState) {
                                     Sprite::new(
                                         "tilemap".to_string(),
                                         vec2(1.0, 1.0),
-                                        Z_UNITS,
+                                        Z_UNIT,
                                         WHITE,
                                     )
                                     .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
@@ -390,7 +391,6 @@ fn handle_input(s: &mut GameState) {
                     // backward
                     while lerpiness >= 0.0 {
                         lerpiness -= delta() * speed;
-                        dbg!(&lerpiness);
                         {
                             let s = &mut s.get();
                             let drawpos = &mut s.entities[e].draw_pos;
@@ -400,8 +400,12 @@ fn handle_input(s: &mut GameState) {
                     }
 
                     s.get().entities[e].draw_pos = start;
-                    let dmg = 5;
-                    s.get().entities[enemy.0].hp -= dmg;
+                    let mut dmg = 5;
+                    while dmg > 0 {
+                        s.get().entities[enemy.0].hp -= 1;
+                        dmg -= 1;
+                        cosync::sleep_ticks(5).await;
+                    }
 
                     if s.get().entities[enemy.0].hp <= 0 {
                         // TODO animate death
@@ -425,7 +429,7 @@ fn handle_input(s: &mut GameState) {
             texture_id("tilemap"),
             actor.draw_pos,
             WHITE,
-            Z_UNITS,
+            Z_UNIT,
             DrawTextureParams {
                 dest_size: Some(vec2(1.0, 1.0).as_world_size()),
                 source_rect: Some(IRect {
@@ -435,6 +439,23 @@ fn handle_input(s: &mut GameState) {
                 ..Default::default()
             },
         );
+
+        if actor.hp < 10 {
+            let sprite = match actor.hp {
+                0 => "hp_0",
+                1 => "hp_1",
+                2 => "hp_2",
+                3 => "hp_3",
+                4 => "hp_4",
+                5 => "hp_5",
+                6 => "hp_6",
+                7 => "hp_7",
+                8 => "hp_8",
+                9 => "hp_9",
+                _ => "hp_question",
+            };
+            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP)
+        }
     }
 }
 
