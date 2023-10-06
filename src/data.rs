@@ -1,14 +1,13 @@
 /// stuff loaded from ldtk and co
-use nanoserde::*;
-use grids::Grid;
 use crate::*;
+use grids::Grid;
+use nanoserde::*;
 
 #[derive(DeJson, Debug)]
 pub struct SpriteData {
     pub x: i32,
     pub y: i32,
 }
-
 
 #[derive(DeJson, Debug)]
 pub struct EntityDef {
@@ -58,10 +57,10 @@ pub struct AutoTile {
     pub src: [i32; 2],
 }
 
-pub fn grid_from_layer<T: Clone, F: Fn(i32) -> T >(layer: &Layer, converter: F ) -> Grid<T> {
+pub fn grid_from_layer<T: Clone, F: Fn(i32) -> T>(layer: &Layer, converter: F) -> Grid<T> {
     let width = layer.width;
     let height = layer.height;
     Grid::filled_with(width, height, |x, y| {
-        converter(layer.int_grid[(x + y * width) as usize] )
+        converter(layer.int_grid[(x + y * width) as usize])
     })
 }

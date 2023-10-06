@@ -9,7 +9,10 @@ pub struct Actor {
     pub sprite_coords: IVec2,
     pub team: Team,
     pub unit_type: UnitType,
+    pub hp: i32,
 }
+
+pub const HP_MAX: i32 = 10;
 
 #[derive(DeJson, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Team {

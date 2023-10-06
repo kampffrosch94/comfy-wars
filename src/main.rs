@@ -71,14 +71,17 @@ struct UIState {
     draw_dijkstra_map: bool,
     selected_entity: Option<Index>,
     move_state: MoveState,
+    chosen_enemy: Option<usize>,
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
 enum MoveState {
     #[default]
     None,
-    Moving,
+    Moving, // Animation
     Confirm,
+    ChooseAttack,
+    Attacking, // Animation
 }
 
 /// all grids in here have the same dimensions
@@ -196,6 +199,7 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
             sprite_coords: ivec2(def.sprite.x, def.sprite.y),
             team: def.team,
             unit_type: def.unit_type,
+            hp: HP_MAX,
         });
     }
 }
@@ -315,6 +319,10 @@ fn handle_input(s: &mut GameState) {
                     s.ui.move_state = MoveState::Confirm;
                 });
             }
+            if is_key_pressed(KeyCode::Space) {
+                // stand on the spot and attack or wait
+                s.ui.move_state = MoveState::Confirm;
+            }
         }
         if s.ui.move_state == MoveState::Confirm {
             let pos = world_to_screen(s.entities[e].draw_pos);
@@ -334,13 +342,78 @@ fn handle_input(s: &mut GameState) {
                             let enemies = enemies_in_range(s, e);
                             if enemies.len() > 0 {
                                 if ui.button("Attack").clicked() {
-                                    // TODO attack
-                                    s.ui.selected_entity = None;
-                                    s.ui.move_state = MoveState::None;
+                                    s.ui.move_state = MoveState::ChooseAttack;
                                 }
                             }
                         })
                 });
+        }
+        if s.ui.move_state == MoveState::ChooseAttack {
+            let enemies = enemies_in_range(s, e);
+            let chosen = s.ui.chosen_enemy.unwrap_or(0);
+            let enemy = enemies[chosen];
+            draw_cursor(s, game_to_world(enemy.1));
+            draw_text(
+                &format!("enemies: {}", enemies.len()),
+                vec2(0., 0.),
+                WHITE,
+                TextAlign::Center,
+            );
+            if is_key_pressed(KeyCode::Escape) {
+                // TODO revert one step instead
+                s.ui.move_state = MoveState::None;
+                s.ui.selected_entity = None;
+            }
+            if is_key_pressed(KeyCode::A) {
+                s.ui.chosen_enemy = Some((chosen + 1) % enemies.len());
+                println!("Switch enemy to {:?}", s.ui.chosen_enemy);
+            }
+            if is_key_pressed(KeyCode::Space) {
+                s.ui.move_state = MoveState::Attacking;
+                s.ui.chosen_enemy = None;
+                s.co.queue(move |mut s| async move {
+                    // insert attack animation here
+                    let start = s.get().entities[e].draw_pos;
+                    let target = game_to_world(enemy.1);
+                    let mut lerpiness = 0.;
+                    let speed = 5.;
+                    // forward
+                    while lerpiness < 0.5 {
+                        lerpiness += delta() * speed;
+                        {
+                            let s = &mut s.get();
+                            let drawpos = &mut s.entities[e].draw_pos;
+                            *drawpos = start.lerp(target, lerpiness);
+                        }
+                        cosync::sleep_ticks(1).await;
+                    }
+                    // backward
+                    while lerpiness >= 0.0 {
+                        lerpiness -= delta() * speed;
+                        dbg!(&lerpiness);
+                        {
+                            let s = &mut s.get();
+                            let drawpos = &mut s.entities[e].draw_pos;
+                            *drawpos = start.lerp(target, lerpiness);
+                        }
+                        cosync::sleep_ticks(1).await;
+                    }
+
+                    s.get().entities[e].draw_pos = start;
+                    let dmg = 5;
+                    s.get().entities[enemy.0].hp -= dmg;
+
+                    if s.get().entities[enemy.0].hp <= 0 {
+                        // TODO animate death
+                        s.get().entities.remove(enemy.0);
+                    }
+
+                    // TODO attack back if still alive
+                    let s = &mut s.get();
+                    s.ui.selected_entity = None;
+                    s.ui.move_state = MoveState::None;
+                });
+            }
         }
     } else {
         draw_cursor(s, mouse_world())

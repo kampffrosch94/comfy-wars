@@ -12,7 +12,6 @@ macro_rules! kf_include_bytes {
     }};
 }
 
-
 // release build or wasm
 #[cfg(any(target_arch = "wasm32", not(debug_assertions)))]
 macro_rules! kf_include_bytes {
@@ -20,7 +19,6 @@ macro_rules! kf_include_bytes {
         include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), $e))
     };
 }
-
 
 // debug build for desktop
 #[cfg(all(not(target_arch = "wasm32"), debug_assertions))]
@@ -31,7 +29,6 @@ macro_rules! kf_include_str {
     }};
 }
 
-
 // release build or wasm
 #[cfg(any(target_arch = "wasm32", not(debug_assertions)))]
 macro_rules! kf_include_str {
@@ -39,7 +36,6 @@ macro_rules! kf_include_str {
         include_str!(concat!(env!("CARGO_MANIFEST_DIR"), $e))
     };
 }
-
 
 pub(crate) use kf_include_bytes;
 pub(crate) use kf_include_str;
