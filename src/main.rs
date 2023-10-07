@@ -1,4 +1,5 @@
 mod data;
+mod debug;
 mod dijkstra;
 mod game;
 mod loading;
@@ -11,6 +12,7 @@ use game::*;
 use grids::*;
 use loading::*;
 use nanoserde::*;
+use debug::*;
 
 simple_game!("comfy wars", GameWrapper, setup, update);
 
@@ -70,6 +72,7 @@ impl GameState {
 struct UIState {
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
+    draw_ai_map: bool,
     selected_entity: Option<Index>,
     move_state: MoveState,
     chosen_enemy: Option<usize>,
@@ -519,6 +522,21 @@ fn handle_debug_input(s: &mut GameState) {
             }
         }
     }
+
+    if is_key_pressed(KeyCode::M) {
+        s.ui.draw_ai_map = !s.ui.draw_ai_map;
+    }
+    if s.ui.draw_ai_map {
+        // TODO WIP HERE
+        // find all enemy positions
+        // find all towns I don't own
+        // set them as seeds with differing strength
+        // 7 for enemy, 15 for town at first
+        // closeness is factored in via dijkstra map
+        cw_debug("Test");
+    }
+
+    cw_draw_debug_window();
 }
 
 fn draw_cursor(s: &GameState, pos: Vec2) {
