@@ -101,7 +101,7 @@ struct Grids {
 impl Default for Grids {
     fn default() -> Self {
         Self {
-            dijkstra: Grid::new(0, 0, 0),
+            dijkstra: Grid::new(0, 0, Default::default()),
             ground: Grid::new(0, 0, Default::default()),
             terrain: Grid::new(0, 0, Default::default()),
         }
