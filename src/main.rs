@@ -7,12 +7,12 @@ mod loading;
 use comfy::*;
 use cosync::{Cosync, CosyncQueueHandle};
 use data::*;
+use debug::*;
 use dijkstra::*;
 use game::*;
 use grids::*;
 use loading::*;
 use nanoserde::*;
-use debug::*;
 
 simple_game!("comfy wars", GameWrapper, setup, update);
 
@@ -280,23 +280,12 @@ fn handle_input(s: &mut GameState) {
             let pos = s.entities[e].draw_pos;
             draw_cursor(s, pos);
 
-            let grid = &mut s.grids.dijkstra;
+            let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
             let gp = grid_pos(pos);
             grid.iter_values_mut().for_each(|val| *val = 0);
             grid[gp] = 9;
-            let cost = |v| -> i32 {
-                let ground = *s.grids.ground.get_clamped_v(v);
-                let terrain = *s.grids.terrain.get_clamped_v(v);
-                match ground {
-                    GroundType::Water => 9999,
-                    GroundType::Ground => match terrain {
-                        TerrainType::None => 2,
-                        TerrainType::Street => 1,
-                        TerrainType::Forest => 3,
-                    },
-                }
-            };
-            dijkstra(grid, &[gp], cost);
+            dijkstra(&mut grid, &[gp], movement_cost(s));
+            let _ = std::mem::replace(&mut s.grids.dijkstra, grid);
             let map = &s.grids.dijkstra;
             draw_move_range(s, map);
             let path = draw_move_path(s, map, mouse_game_grid());
@@ -504,36 +493,29 @@ fn handle_debug_input(s: &mut GameState) {
     }
 
     if s.ui.draw_dijkstra_map {
-        for (x, y, val) in s.grids.dijkstra.iter() {
-            let pos = vec2(x as _, -y as _);
-            draw_rect(
-                pos,
-                vec2(1., 1.),
-                Color {
-                    r: 0.1,
-                    g: 0.1,
-                    b: 0.1,
-                    a: 0.5,
-                },
-                50,
-            );
-            if *val > 0 {
-                draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
-            }
-        }
+        draw_dijkstra_map(&s.grids.dijkstra);
     }
 
     if is_key_pressed(KeyCode::M) {
         s.ui.draw_ai_map = !s.ui.draw_ai_map;
     }
     if s.ui.draw_ai_map {
+        cw_debug("UI draw map");
         // TODO WIP HERE
-        // find all enemy positions
-        // find all towns I don't own
-        // set them as seeds with differing strength
-        // 7 for enemy, 15 for town at first
-        // closeness is factored in via dijkstra map
-        cw_debug("Test");
+        let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
+        grid.iter_values_mut().for_each(|val| *val = 0);
+        let enemy_positions = s
+            .entities
+            .iter()
+            .filter(|(_i, a)| a.team == PLAYER_TEAM)
+            .map(|(_i, a)| a.pos)
+            .collect_vec();
+        for pos in enemy_positions.iter() {
+            grid[*pos] = 30;
+        }
+        dijkstra(&mut grid, &enemy_positions, movement_cost(s));
+        draw_dijkstra_map(&grid);
+        s.grids.dijkstra = grid;
     }
 
     cw_draw_debug_window();
@@ -619,6 +601,22 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) -> Vec<IVec2> {
     return path;
 }
 
+fn movement_cost<'a>(s: &'a GameState) -> impl Fn(IVec2) -> i32 + 'a {
+    let cost_function = |v| -> i32 {
+        let ground = *s.grids.ground.get_clamped_v(v);
+        let terrain = *s.grids.terrain.get_clamped_v(v);
+        use GroundType as G;
+        use TerrainType as T;
+        match (ground, terrain) {
+            (G::Water, _) => 9999,
+            (G::Ground, T::None) => 2,
+            (G::Ground, T::Street) => 1,
+            (G::Ground, T::Forest) => 3,
+        }
+    };
+    cost_function
+}
+
 fn grid_world_pos(v: Vec2) -> Vec2 {
     Vec2 {
         x: v.x.round(),
@@ -643,4 +641,24 @@ fn game_to_world(v: IVec2) -> Vec2 {
 
 fn mouse_game_grid() -> IVec2 {
     word_to_game(mouse_world())
+}
+
+fn draw_dijkstra_map(grid: &Grid<i32>) {
+    for (x, y, val) in grid.iter() {
+        let pos = vec2(x as _, -y as _);
+        draw_rect(
+            pos,
+            vec2(1., 1.),
+            Color {
+                r: 0.1,
+                g: 0.1,
+                b: 0.1,
+                a: 0.5,
+            },
+            50,
+        );
+        if *val > 0 {
+            draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+        }
+    }
 }
