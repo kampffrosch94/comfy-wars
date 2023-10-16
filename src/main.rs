@@ -53,6 +53,7 @@ pub struct GameState {
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
     entities: Arena<Actor>,
+    phase: GamePhase,
 }
 
 impl GameState {
@@ -64,8 +65,16 @@ impl GameState {
             grids: Default::default(),
             co,
             entities: Default::default(),
+            phase: Default::default(),
         }
     }
+}
+
+#[derive(Debug, Default)]
+enum GamePhase {
+    #[default]
+    PlayerPhase,
+    EnemyPhase,
 }
 
 #[derive(Debug, Default)]
@@ -224,9 +233,47 @@ fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
     let c_x = tweak!(6.);
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
+    draw(s);
 
     handle_input(s);
     handle_debug_input(s);
+}
+
+fn draw(s: &mut GameState) {
+    // draw actors
+    for (_index, actor) in s.entities.iter() {
+        draw_sprite_ex(
+            texture_id("tilemap"),
+            actor.draw_pos,
+            WHITE,
+            Z_UNIT,
+            DrawTextureParams {
+                dest_size: Some(vec2(1.0, 1.0).as_world_size()),
+                source_rect: Some(IRect {
+                    offset: actor.sprite_coords,
+                    size: ivec2(GRIDSIZE, GRIDSIZE),
+                }),
+                ..Default::default()
+            },
+        );
+
+        if actor.hp < 10 {
+            let sprite = match actor.hp {
+                0 => "hp_0",
+                1 => "hp_1",
+                2 => "hp_2",
+                3 => "hp_3",
+                4 => "hp_4",
+                5 => "hp_5",
+                6 => "hp_6",
+                7 => "hp_7",
+                8 => "hp_8",
+                9 => "hp_9",
+                _ => "hp_question",
+            };
+            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP)
+        }
+    }
 }
 
 /// relevant for the actual game
@@ -246,6 +293,19 @@ fn handle_input(s: &mut GameState) {
                 s.ui.selected_entity = Some(key);
             }
         }
+    }
+
+    if is_key_pressed(KeyCode::End) {
+        s.phase = GamePhase::EnemyPhase;
+        s.co.queue(move |mut s| async move {
+            let mut elapsed = 0.;
+            while elapsed < 3. {
+                cw_debug(format!("In enemy phase. {:.1}", elapsed));
+                elapsed += delta();
+                cosync::sleep_ticks(1).await;
+            }
+            s.get().phase = GamePhase::PlayerPhase;
+        });
     }
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
@@ -413,41 +473,6 @@ fn handle_input(s: &mut GameState) {
         }
     } else {
         draw_cursor(s, mouse_world())
-    }
-
-    // draw actors
-    for (_index, actor) in s.entities.iter() {
-        draw_sprite_ex(
-            texture_id("tilemap"),
-            actor.draw_pos,
-            WHITE,
-            Z_UNIT,
-            DrawTextureParams {
-                dest_size: Some(vec2(1.0, 1.0).as_world_size()),
-                source_rect: Some(IRect {
-                    offset: actor.sprite_coords,
-                    size: ivec2(GRIDSIZE, GRIDSIZE),
-                }),
-                ..Default::default()
-            },
-        );
-
-        if actor.hp < 10 {
-            let sprite = match actor.hp {
-                0 => "hp_0",
-                1 => "hp_1",
-                2 => "hp_2",
-                3 => "hp_3",
-                4 => "hp_4",
-                5 => "hp_5",
-                6 => "hp_6",
-                7 => "hp_7",
-                8 => "hp_8",
-                9 => "hp_9",
-                _ => "hp_question",
-            };
-            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP)
-        }
     }
 }
 
