@@ -17,3 +17,9 @@ pub fn cw_draw_debug_window() {
         });
     }
 }
+
+macro_rules! cw_debug {
+    ($($arg:tt)*) => {
+        cw_debug(format!($($arg)*));
+    };
+}

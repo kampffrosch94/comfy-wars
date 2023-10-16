@@ -1,4 +1,5 @@
 mod data;
+#[macro_use]
 mod debug;
 mod dijkstra;
 mod game;
@@ -70,7 +71,7 @@ impl GameState {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 enum GamePhase {
     #[default]
     PlayerPhase,
@@ -233,13 +234,16 @@ fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
     let c_x = tweak!(6.);
     let c_y = tweak!(-7.);
     main_camera_mut().center = Vec2::new(c_x, c_y);
-    draw(s);
 
-    handle_input(s);
+    draw_game(s);
+
+    if s.phase == GamePhase::PlayerPhase {
+        handle_input(s);
+    }
     handle_debug_input(s);
 }
 
-fn draw(s: &mut GameState) {
+fn draw_game(s: &mut GameState) {
     // draw actors
     for (_index, actor) in s.entities.iter() {
         draw_sprite_ex(
@@ -300,7 +304,7 @@ fn handle_input(s: &mut GameState) {
         s.co.queue(move |mut s| async move {
             let mut elapsed = 0.;
             while elapsed < 3. {
-                cw_debug(format!("In enemy phase. {:.1}", elapsed));
+                cw_debug!("In enemy phase. {:.1}", elapsed);
                 elapsed += delta();
                 cosync::sleep_ticks(1).await;
             }
