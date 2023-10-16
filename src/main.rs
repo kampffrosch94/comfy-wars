@@ -474,12 +474,30 @@ fn handle_input(s: &mut GameState) {
 }
 
 async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
-    let mut elapsed = 0.;
-    while elapsed < 3. {
-        cw_debug!("In enemy phase. {:.1}", elapsed);
-        elapsed += delta();
-        cosync::sleep_ticks(1).await;
+    // let mut elapsed = 0.;
+    // while elapsed < 3. {
+    //     cw_debug!("In enemy phase. {:.1}", elapsed);
+    //     elapsed += delta();
+    //     cosync::sleep_ticks(1).await;
+    // }
+    let ai_units = s
+        .get()
+        .entities
+        .iter()
+        .filter(|(_k, a)| a.team == ENEMY_TEAM)
+        .map(|e| e.0)
+        .collect_vec();
+    for index in ai_units {
+        for _ in 0..60 {
+            {
+                let s = &mut s.get();
+                let actor = &s.entities[index];
+                draw_cursor(s, actor.draw_pos);
+            }
+            cosync::sleep_ticks(1).await;
+        }
     }
+
     s.get().phase = GamePhase::PlayerPhase;
 }
 

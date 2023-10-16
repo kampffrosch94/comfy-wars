@@ -2,7 +2,7 @@
 use crate::*;
 use thunderdome::*;
 
-// const ENEMY_TEAM: Team = Team::Red;
+pub const ENEMY_TEAM: Team = Team::Red;
 pub const PLAYER_TEAM: Team = Team::Blue;
 
 #[derive(Debug)]
