@@ -93,6 +93,7 @@ enum MoveState {
     #[default]
     None,
     Moving, // Animation
+
     Confirm,
     ChooseAttack,
     Attacking, // Animation
@@ -301,15 +302,7 @@ fn handle_input(s: &mut GameState) {
 
     if is_key_pressed(KeyCode::End) {
         s.phase = GamePhase::EnemyPhase;
-        s.co.queue(move |mut s| async move {
-            let mut elapsed = 0.;
-            while elapsed < 3. {
-                cw_debug!("In enemy phase. {:.1}", elapsed);
-                elapsed += delta();
-                cosync::sleep_ticks(1).await;
-            }
-            s.get().phase = GamePhase::PlayerPhase;
-        });
+        s.co.queue(enemy_phase);
     }
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
@@ -478,6 +471,16 @@ fn handle_input(s: &mut GameState) {
     } else {
         draw_cursor(s, mouse_world())
     }
+}
+
+async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
+    let mut elapsed = 0.;
+    while elapsed < 3. {
+        cw_debug!("In enemy phase. {:.1}", elapsed);
+        elapsed += delta();
+        cosync::sleep_ticks(1).await;
+    }
+    s.get().phase = GamePhase::PlayerPhase;
 }
 
 /// debug information and keybindings
