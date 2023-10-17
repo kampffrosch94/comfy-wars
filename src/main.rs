@@ -519,6 +519,26 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             // draw_move_range(s, map);
             cosync::sleep_ticks(1).await;
         }
+        // move along path
+        {
+            for pos in path.iter() {
+                let target = game_to_world(*pos);
+                let mut lerpiness = 0.;
+                while lerpiness < 1. {
+                    lerpiness += delta() * 25.;
+                    {
+                        let s = &mut s.get();
+                        let drawpos = &mut s.entities[index].draw_pos;
+                        *drawpos = drawpos.lerp(target, lerpiness);
+                    }
+                    cosync::sleep_ticks(1).await;
+                }
+            }
+            let target = game_to_world(*path.last().unwrap());
+            let s = &mut s.get();
+            s.entities[index].draw_pos = target;
+            s.entities[index].pos = *path.last().unwrap();
+        }
     }
 
     s.get().phase = GamePhase::PlayerPhase;
