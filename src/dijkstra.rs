@@ -44,6 +44,7 @@ pub fn dijkstra<F: Fn(IVec2) -> i32>(grid: &mut Grid<i32>, seed: &[IVec2], cost:
     }
 }
 
+/// returns path that follows increasing values until it reaches a local maximium
 pub fn dijkstra_path(grid: &Grid<i32>, start: IVec2) -> Vec<IVec2> {
     let mut path = Vec::new();
     if start.x < 0 || start.y <= 0 || start.x >= grid.width || start.y >= grid.height {

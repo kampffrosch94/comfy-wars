@@ -342,10 +342,11 @@ fn handle_input(s: &mut GameState) {
             grid.iter_values_mut().for_each(|val| *val = 0);
             grid[gp] = 9;
             dijkstra(&mut grid, &[gp], movement_cost(s));
-            let _ = std::mem::replace(&mut s.grids.dijkstra, grid);
+            s.grids.dijkstra = grid;
             let map = &s.grids.dijkstra;
             draw_move_range(s, map);
-            let path = draw_move_path(s, map, mouse_game_grid());
+            let path = dijkstra_path(map, mouse_game_grid());
+            draw_move_path(s, &path);
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
                 s.ui.move_state = MoveState::Moving;
                 s.co.queue(move |mut s| async move {
@@ -491,8 +492,26 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
         for _ in 0..60 {
             {
                 let s = &mut s.get();
+                let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
+                grid.iter_values_mut().for_each(|val| *val = 0);
+                let enemy_positions = s
+                    .entities
+                    .iter()
+                    .filter(|(_i, a)| a.team == PLAYER_TEAM)
+                    .map(|(_i, a)| a.pos)
+                    .collect_vec();
+                for pos in enemy_positions.iter() {
+                    grid[*pos] = 30;
+                }
+                dijkstra(&mut grid, &enemy_positions, movement_cost(s));
+                s.grids.dijkstra = grid;
                 let actor = &s.entities[index];
                 draw_cursor(s, actor.draw_pos);
+                let gp = actor.pos;
+                let map = &s.grids.dijkstra;
+                // draw_move_range(s, map);
+                let path = dijkstra_path(map, gp);
+                draw_move_path(s, &path);
             }
             cosync::sleep_ticks(1).await;
         }
@@ -603,13 +622,12 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
     }
 }
 
-fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) -> Vec<IVec2> {
+fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
     const DOWN: (i32, i32) = (0, 1);
     const UP: (i32, i32) = (0, -1);
     const RIGHT: (i32, i32) = (1, 0);
     const LEFT: (i32, i32) = (-1, 0);
 
-    let path = dijkstra_path(grid, gp);
     let mut iter = path.iter().rev();
     let prev = iter.next().cloned();
     let mut prev_direction: Option<(i32, i32)> = None;
@@ -648,7 +666,6 @@ fn draw_move_path(s: &GameState, grid: &Grid<i32>, gp: IVec2) -> Vec<IVec2> {
         };
         cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW);
     }
-    return path;
 }
 
 fn movement_cost<'a>(s: &'a GameState) -> impl Fn(IVec2) -> i32 + 'a {
