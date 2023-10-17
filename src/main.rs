@@ -489,30 +489,34 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
         .map(|e| e.0)
         .collect_vec();
     for index in ai_units {
-        for _ in 0..60 {
+        let (cursor, path) = {
+            let s = &mut s.get();
+            let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
+            grid.iter_values_mut().for_each(|val| *val = 0);
+            let enemy_positions = s
+                .entities
+                .iter()
+                .filter(|(_i, a)| a.team == PLAYER_TEAM)
+                .map(|(_i, a)| a.pos)
+                .collect_vec();
+            for pos in enemy_positions.iter() {
+                grid[*pos] = 30;
+            }
+            dijkstra(&mut grid, &enemy_positions, movement_cost(s));
+            s.grids.dijkstra = grid;
+            let actor = &s.entities[index];
+            let gp = actor.pos;
+            let map = &s.grids.dijkstra;
+            let path = dijkstra_path(map, gp);
+            (actor.draw_pos, path)
+        };
+        for _ in 0..30 {
             {
                 let s = &mut s.get();
-                let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
-                grid.iter_values_mut().for_each(|val| *val = 0);
-                let enemy_positions = s
-                    .entities
-                    .iter()
-                    .filter(|(_i, a)| a.team == PLAYER_TEAM)
-                    .map(|(_i, a)| a.pos)
-                    .collect_vec();
-                for pos in enemy_positions.iter() {
-                    grid[*pos] = 30;
-                }
-                dijkstra(&mut grid, &enemy_positions, movement_cost(s));
-                s.grids.dijkstra = grid;
-                let actor = &s.entities[index];
-                draw_cursor(s, actor.draw_pos);
-                let gp = actor.pos;
-                let map = &s.grids.dijkstra;
-                // draw_move_range(s, map);
-                let path = dijkstra_path(map, gp);
+                draw_cursor(s, cursor);
                 draw_move_path(s, &path);
             }
+            // draw_move_range(s, map);
             cosync::sleep_ticks(1).await;
         }
     }
