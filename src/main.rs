@@ -104,7 +104,6 @@ enum MoveState {
 /// bigger y is down (reverse of what comfy uses atm)
 #[derive(Debug)]
 struct Grids {
-    dijkstra: Grid<i32>,
     ground: Grid<GroundType>,
     terrain: Grid<TerrainType>,
 }
@@ -112,7 +111,6 @@ struct Grids {
 impl Default for Grids {
     fn default() -> Self {
         Self {
-            dijkstra: Grid::new(0, 0, Default::default()),
             ground: Grid::new(0, 0, Default::default()),
             terrain: Grid::new(0, 0, Default::default()),
         }
@@ -128,7 +126,6 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
     {
         let level = &ldtk.levels[0];
         let (w, h) = (level.pixel_width / GRIDSIZE, level.pixel_height / GRIDSIZE);
-        s.grids.dijkstra = Grid::new(w, h, 0);
         s.grids.ground = Grid::new(w, h, Default::default());
     }
 
@@ -337,15 +334,17 @@ fn handle_input(s: &mut GameState) {
             let pos = s.entities[e].draw_pos;
             draw_cursor(s, pos);
 
-            let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
+            let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             let gp = grid_pos(pos);
             grid.iter_values_mut().for_each(|val| *val = 0);
             grid[gp] = 9;
             dijkstra(&mut grid, &[gp], movement_cost(s));
-            s.grids.dijkstra = grid;
-            let map = &s.grids.dijkstra;
-            draw_move_range(s, map);
-            let path = dijkstra_path(map, mouse_game_grid());
+            draw_move_range(s, &grid);
+            if s.ui.draw_dijkstra_map {
+                draw_dijkstra_map(&grid);
+            }
+
+            let path = dijkstra_path(&grid, mouse_game_grid());
             draw_move_path(s, &path);
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
                 s.ui.move_state = MoveState::Moving;
@@ -491,7 +490,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
     for index in ai_units {
         let (cursor, path) = {
             let s = &mut s.get();
-            let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
+            let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             grid.iter_values_mut().for_each(|val| *val = 0);
             let enemy_positions = s
                 .entities
@@ -503,11 +502,9 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 grid[*pos] = 30;
             }
             dijkstra(&mut grid, &enemy_positions, movement_cost(s));
-            s.grids.dijkstra = grid;
             let actor = &s.entities[index];
             let gp = actor.pos;
-            let map = &s.grids.dijkstra;
-            let path = dijkstra_path(map, gp);
+            let path = dijkstra_path(&grid, gp);
             (actor.draw_pos, path)
         };
         for _ in 0..30 {
@@ -585,30 +582,8 @@ fn handle_debug_input(s: &mut GameState) {
         s.ui.draw_dijkstra_map = !s.ui.draw_dijkstra_map;
     }
 
-    if s.ui.draw_dijkstra_map {
-        draw_dijkstra_map(&s.grids.dijkstra);
-    }
-
     if is_key_pressed(KeyCode::M) {
         s.ui.draw_ai_map = !s.ui.draw_ai_map;
-    }
-    if s.ui.draw_ai_map {
-        cw_debug("UI draw map");
-        // TODO WIP HERE
-        let mut grid = std::mem::replace(&mut s.grids.dijkstra, Grid::new(0, 0, 0));
-        grid.iter_values_mut().for_each(|val| *val = 0);
-        let enemy_positions = s
-            .entities
-            .iter()
-            .filter(|(_i, a)| a.team == PLAYER_TEAM)
-            .map(|(_i, a)| a.pos)
-            .collect_vec();
-        for pos in enemy_positions.iter() {
-            grid[*pos] = 30;
-        }
-        dijkstra(&mut grid, &enemy_positions, movement_cost(s));
-        draw_dijkstra_map(&grid);
-        s.grids.dijkstra = grid;
     }
 
     cw_draw_debug_window();
