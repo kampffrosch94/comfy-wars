@@ -334,22 +334,29 @@ fn handle_input(s: &mut GameState) {
             let pos = s.entities[e].draw_pos;
             draw_cursor(s, pos);
 
-            let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
-            let gp = grid_pos(pos);
-            grid.iter_values_mut().for_each(|val| *val = 0);
-            grid[gp] = 9;
-            dijkstra(&mut grid, &[gp], movement_cost(s));
-            draw_move_range(s, &grid);
+            let start_pos = grid_pos(pos);
+            let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
+            move_range[start_pos] = 9;
+            dijkstra(&mut move_range, &[start_pos], movement_cost(s));
+            draw_move_range(s, &move_range);
             if s.ui.draw_dijkstra_map {
-                draw_dijkstra_map(&grid);
+                draw_dijkstra_map(&move_range);
             }
 
-            let path = dijkstra_path(&grid, mouse_game_grid());
+            let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
+            let goal = mouse_game_grid();
+            *grid.get_clamped_mut(goal.x, goal.y) = 99;
+            dijkstra(&mut grid, &[goal], movement_cost(s));
+            move_range.clamp_values(0, 1);
+            grid.mul_inplace(&move_range);
+            let path = dijkstra_path(&grid, start_pos);
             draw_move_path(s, &path);
+            draw_dijkstra_map(&grid);
+
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
                 s.ui.move_state = MoveState::Moving;
                 s.co.queue(move |mut s| async move {
-                    for pos in path.iter().rev() {
+                    for pos in path.iter() {
                         let target = game_to_world(*pos);
                         let mut lerpiness = 0.;
                         while lerpiness < 1. {
@@ -362,10 +369,11 @@ fn handle_input(s: &mut GameState) {
                             cosync::sleep_ticks(1).await;
                         }
                     }
-                    let target = game_to_world(path[0]);
+                    let last = *path.last().unwrap();
+                    let target = game_to_world(last);
                     let s = &mut s.get();
                     s.entities[e].draw_pos = target;
-                    s.entities[e].pos = path[0];
+                    s.entities[e].pos = last;
                     s.ui.move_state = MoveState::Confirm;
                 });
             }
@@ -627,7 +635,7 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
     const RIGHT: (i32, i32) = (1, 0);
     const LEFT: (i32, i32) = (-1, 0);
 
-    let mut iter = path.iter().rev();
+    let mut iter = path.iter();
     let prev = iter.next().cloned();
     let mut prev_direction: Option<(i32, i32)> = None;
     if let Some(mut prev) = prev {
@@ -653,8 +661,8 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
     // draw ending arrow
     let len = path.len();
     if len >= 2 {
-        let prev = path[1];
-        let pos = path[0];
+        let prev = path[path.len() - 2];
+        let pos = path[path.len() - 1];
         let direction: (i32, i32) = (pos - prev).into();
         let sprite = match direction {
             LEFT => "arrow_w",

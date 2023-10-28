@@ -9,7 +9,8 @@ edition = "2021"
 comfy = { git = "https://github.com/darthdeus/comfy", features = ["wayland"]}
 
 nanoserde = "0.1.35"
-grids = "0.2.3"
+#grids = "0.2.3"
+grids = { git = "https://github.com/kampffrosch94/grids", branch = "grid_math" }
 cosync = "0.2.1"
 thunderdome = "0.6.1"
 

@@ -1052,8 +1052,7 @@ dependencies = [
 [[package]]
 name = "grids"
 version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dd88e4cce43ed103a98f4ea90b0638bab12803069e2626a8f6f1b37f32e2577"
+source = "git+https://github.com/kampffrosch94/grids?branch=grid_math#1b0b498bf809cac128c73dbcfe89d66e981b0373"
 dependencies = [
  "glam",
 ]
