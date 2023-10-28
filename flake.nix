@@ -48,10 +48,10 @@
             vulkan-validation-layers
 
             # X
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
+            # xorg.libX11
+            # xorg.libXcursor
+            # xorg.libXi
+            # xorg.libXrandr
 
             # wayland
             wayland
@@ -68,6 +68,8 @@
             lib.makeLibraryPath [
               alsaLib # sound
               vulkan-loader
+              libxkbcommon # keyboard
+              wayland
             ];
         };
       });

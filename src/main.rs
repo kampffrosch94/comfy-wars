@@ -29,7 +29,7 @@ const Z_MOVE_HIGHLIGHT: i32 = 11;
 const Z_MOVE_ARROW: i32 = 12;
 const Z_UNIT: i32 = 20;
 const Z_UNIT_HP: i32 = 21;
-const Z_CURSOR: i32 = 1000;
+const Z_CURSOR: i32 = 100;
 
 pub struct GameWrapper {
     cosync: Cosync<GameState>,
