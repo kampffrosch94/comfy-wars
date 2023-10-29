@@ -335,6 +335,7 @@ fn handle_input(s: &mut GameState) {
             draw_cursor(s, pos);
 
             let start_pos = grid_pos(pos);
+            // handle move range
             let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             move_range[start_pos] = 9;
             dijkstra(&mut move_range, &[start_pos], movement_cost(s));
@@ -343,15 +344,37 @@ fn handle_input(s: &mut GameState) {
                 draw_dijkstra_map(&move_range);
             }
 
+            // find goal
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             let goal = mouse_game_grid();
-            *grid.get_clamped_mut(goal.x, goal.y) = 99;
+            *grid.get_clamped_mut(goal.x, goal.y) = 99; // TODO increase this when done developing
             dijkstra(&mut grid, &[goal], movement_cost(s));
             move_range.clamp_values(0, 1);
             grid.mul_inplace(&move_range);
+
+            // allow passing through allies, but don't stop on them
+            let mut seeds = Vec::new();
+            for (_, actor) in &s.entities {
+                grid[actor.pos] = -99;
+                seeds.push(actor.pos);
+            }
+            let highest_reachable_pos = grid
+                .iter_coords()
+                .max_by_key(|(_pos, val)| *val)
+                .map(|(pos, _)| pos)
+                .unwrap();
+            seeds.push(highest_reachable_pos);
+            dijkstra(
+                &mut grid,
+                &seeds,
+                movement_cost(s),
+            );
+            grid.mul_inplace(&move_range);
+            draw_dijkstra_map(&grid);
+
+            // finally actually calculate and draw the path
             let path = dijkstra_path(&grid, start_pos);
             draw_move_path(s, &path);
-            draw_dijkstra_map(&grid);
 
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
                 s.ui.move_state = MoveState::Moving;
