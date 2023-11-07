@@ -535,7 +535,32 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 grid[*pos] = 30;
             }
             dijkstra(&mut grid, &enemy_positions, movement_cost(s));
+            move_range.clamp_values(0, 1);
+            grid.mul_inplace(&move_range);
+
+            // allow passing through allies, but don't stop on them
+            let mut seeds = Vec::new();
+            for (_, actor) in &s.entities {
+                grid[actor.pos] = -99;
+                seeds.push(actor.pos);
+            }
+            let highest_reachable_pos = grid
+                .iter_coords()
+                .max_by_key(|(_pos, val)| *val)
+                .map(|(pos, _)| pos)
+                .unwrap();
+            seeds.push(highest_reachable_pos);
+            dijkstra(
+                &mut grid,
+                &seeds,
+                movement_cost(s),
+            );
+            grid.mul_inplace(&move_range);
+
+            // compute path
             let path = dijkstra_path(&grid, start_pos);
+
+            // results for async usage
             (actor.draw_pos, move_range, path)
         };
         for _ in 0..30 {
