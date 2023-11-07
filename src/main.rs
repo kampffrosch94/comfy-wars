@@ -505,12 +505,6 @@ fn handle_input(s: &mut GameState) {
 }
 
 async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
-    // let mut elapsed = 0.;
-    // while elapsed < 3. {
-    //     cw_debug!("In enemy phase. {:.1}", elapsed);
-    //     elapsed += delta();
-    //     cosync::sleep_ticks(1).await;
-    // }
     let ai_units = s
         .get()
         .entities
@@ -519,10 +513,18 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
         .map(|e| e.0)
         .collect_vec();
     for index in ai_units {
-        let (cursor, path) = {
+        let (cursor, move_range, path) = {
             let s = &mut s.get();
+            let actor = &s.entities[index];
+            let start_pos = actor.pos;
+
+            // handle move range
+            let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
+            move_range[start_pos] = 9;
+            dijkstra(&mut move_range, &[start_pos], movement_cost(s));
+
+            // find goal position
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
-            grid.iter_values_mut().for_each(|val| *val = 0);
             let enemy_positions = s
                 .entities
                 .iter()
@@ -533,18 +535,16 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 grid[*pos] = 30;
             }
             dijkstra(&mut grid, &enemy_positions, movement_cost(s));
-            let actor = &s.entities[index];
-            let gp = actor.pos;
-            let path = dijkstra_path(&grid, gp);
-            (actor.draw_pos, path)
+            let path = dijkstra_path(&grid, start_pos);
+            (actor.draw_pos, move_range, path)
         };
         for _ in 0..30 {
             {
                 let s = &mut s.get();
+                draw_move_range(s, &move_range);
                 draw_cursor(s, cursor);
                 draw_move_path(s, &path);
             }
-            // draw_move_range(s, map);
             cosync::sleep_ticks(1).await;
         }
         // move along path
