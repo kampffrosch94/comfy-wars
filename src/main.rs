@@ -364,11 +364,7 @@ fn handle_input(s: &mut GameState) {
                 .map(|(pos, _)| pos)
                 .unwrap();
             seeds.push(highest_reachable_pos);
-            dijkstra(
-                &mut grid,
-                &seeds,
-                movement_cost(s),
-            );
+            dijkstra(&mut grid, &seeds, movement_cost(s));
             grid.mul_inplace(&move_range);
             draw_dijkstra_map(&grid);
 
@@ -540,7 +536,8 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
 
             // allow passing through allies, but don't stop on them
             let mut seeds = Vec::new();
-            for (_, actor) in &s.entities {
+            // stop on your current position if its already the best
+            for (_, actor) in s.entities.iter().filter(|(i, _)| *i != index) {
                 grid[actor.pos] = -99;
                 seeds.push(actor.pos);
             }
@@ -550,11 +547,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 .map(|(pos, _)| pos)
                 .unwrap();
             seeds.push(highest_reachable_pos);
-            dijkstra(
-                &mut grid,
-                &seeds,
-                movement_cost(s),
-            );
+            dijkstra(&mut grid, &seeds, movement_cost(s));
             grid.mul_inplace(&move_range);
 
             // compute path
