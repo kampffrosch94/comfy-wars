@@ -340,10 +340,6 @@ fn handle_input(s: &mut GameState) {
             let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             move_range[start_pos] = 9;
             dijkstra(&mut move_range, &[start_pos], movement_cost(s));
-            draw_move_range(s, &move_range);
-            if s.ui.draw_dijkstra_map {
-                draw_dijkstra_map(&move_range);
-            }
 
             // find goal
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
@@ -377,6 +373,11 @@ fn handle_input(s: &mut GameState) {
             // finally actually calculate and draw the path
             let path = dijkstra_path(&grid, start_pos);
             draw_move_path(s, &path);
+
+            draw_move_range(s, &grid);
+            if s.ui.draw_dijkstra_map {
+                draw_dijkstra_map(&grid);
+            }
 
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
                 s.ui.move_state = MoveState::Moving;
