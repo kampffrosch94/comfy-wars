@@ -332,6 +332,7 @@ fn handle_input(s: &mut GameState) {
     if let Some(e) = s.ui.selected_entity {
         if s.ui.move_state == MoveState::None {
             let pos = s.entities[e].draw_pos;
+            let team = s.entities[e].team;
             draw_cursor(s, pos);
 
             let start_pos = grid_pos(pos);
@@ -366,6 +367,11 @@ fn handle_input(s: &mut GameState) {
             seeds.push(highest_reachable_pos);
             dijkstra(&mut grid, &seeds, movement_cost(s));
             grid.mul_inplace(&move_range);
+
+            // disallow moving through enemies
+            for (_, actor) in s.entities.iter().filter(|(_i, a)| a.team != team) {
+                grid[actor.pos] = -99;
+            }
             draw_dijkstra_map(&grid);
 
             // finally actually calculate and draw the path
@@ -533,35 +539,47 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             }
             dijkstra(&mut grid, &enemy_positions, movement_cost(s));
             grid.mul_inplace(&move_range);
+            let debug_grid = grid.clone();
 
             // allow passing through allies, but don't stop on them
             // stop on your current position if its already the best
             for (_, actor) in s.entities.iter().filter(|(i, _)| *i != index) {
                 grid[actor.pos] = -99;
             }
-            let highest_reachable_pos = grid
+
+            let mut highest_reachable_pos = grid
                 .iter_coords()
                 .max_by_key(|(_pos, val)| *val)
                 .map(|(pos, _)| pos)
                 .unwrap();
+            // stop weird running around that depends on grid iter order
+            if grid[highest_reachable_pos] == grid[start_pos] {
+                highest_reachable_pos = start_pos;
+            }
+
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             grid[highest_reachable_pos] = 30;
             dijkstra(&mut grid, &[highest_reachable_pos], movement_cost(s));
             grid.mul_inplace(&move_range);
 
+            // disallow moving through enemies
+            for (_, actor) in s.entities.iter().filter(|(_i, a)| a.team != actor.team) {
+                grid[actor.pos] = -99;
+            }
+
             // compute path
             let path = dijkstra_path(&grid, start_pos);
 
             // results for async usage
-            (actor.draw_pos, move_range, path, grid)
+            (actor.draw_pos, move_range, path, debug_grid)
         };
-        for _ in 0..tweak!(30) {
+        for _ in 0..tweak!(90) {
             {
                 let s = &mut s.get();
                 draw_move_range(s, &move_range);
                 draw_cursor(s, cursor);
                 draw_move_path(s, &path);
-                //draw_dijkstra_map(&_grid);
+                draw_dijkstra_map(&_grid);
             }
             cosync::sleep_ticks(1).await;
         }
