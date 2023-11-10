@@ -37,7 +37,7 @@ pub struct GameWrapper {
 }
 
 impl GameWrapper {
-    pub fn new(c: &mut EngineContext) -> Self {
+    pub fn new(c: &mut EngineState) -> Self {
         let cosync = Cosync::new();
         let handle = cosync.create_queue_handle();
         Self {
@@ -58,7 +58,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(_c: &mut EngineContext, co: CosyncQueueHandle<GameState>) -> Self {
+    pub fn new(_c: &mut EngineState, co: CosyncQueueHandle<GameState>) -> Self {
         Self {
             ui: Default::default(),
             sprites: Default::default(),
