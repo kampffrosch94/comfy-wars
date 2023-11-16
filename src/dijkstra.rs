@@ -16,6 +16,7 @@ pub fn dijkstra<F: Fn(IVec2) -> i32>(grid: &mut Grid<i32>, seed: &[IVec2], cost:
         .iter()
         .flat_map(|pos| get_neighbors(*pos, grid))
         .collect_vec();
+    next.extend(seed.iter()); // sometimes its necessary to recompute seeds too
 
     while !next.is_empty() {
         let buffer = next.drain(..).collect_vec();

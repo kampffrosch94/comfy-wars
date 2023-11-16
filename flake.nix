@@ -1,3 +1,6 @@
+# confirmed to work on nixos with wayland (sway)
+# use with `nix develop`
+# then run `cargo run --example music -F winit/wayland`
 {
   inputs = {
     fenix = {
@@ -18,43 +21,55 @@
 
     in {
       devShells = forAllSystems (pkgs: {
-        default = pkgs.mkShell {
+        default = (pkgs.mkShell.override {
+          stdenv = pkgs.useMoldLinker pkgs.clangStdenv;
+        }) {
           packages = with pkgs; [
             # rust stuff
-            (with pkgs.fenix; with stable; combine [
-              cargo
-              clippy
-              rust-src
-              rustc
-              rustfmt
-              targets.wasm32-unknown-unknown.stable.rust-std
+            (pkgs.fenix.complete.withComponents [
+              "cargo"
+              "clippy"
+              "rust-src"
+              "rustc"
+              "rustfmt"
             ])
-
             clang
             mold
-            trunk
             # rust-analyzer-nightly # optional
 
             # necessary to build
             pkg-config # locate C dependencies
             alsaLib # sound
             libxkbcommon # keyboard
+
+            vulkan-tools
+            vulkan-headers
+            vulkan-loader
+            vulkan-validation-layers
+
+            # X
+            # xorg.libX11
+            # xorg.libXcursor
+            # xorg.libXi
+            # xorg.libXrandr
+
+            # wayland
             wayland
 
             # extra tooling
+            tracy # profiler, call with ~Tracy~
             ldtk # level editor
             jq # extract stuff from json
-            tracy # profiler, call with ~Tracy~
             cargo-flamegraph # more profiling :)
             cargo-watch
           ];
           # stuff we need to run
           LD_LIBRARY_PATH = with pkgs;
             lib.makeLibraryPath [
+              alsaLib # sound
+              vulkan-loader
               libxkbcommon # keyboard
               wayland
-              libGL # OpenGL I think
-              alsaLib # sound
             ];
         };
       });
