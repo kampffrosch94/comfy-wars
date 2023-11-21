@@ -574,7 +574,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             // results for async usage
             (actor.draw_pos, move_range, path, debug_grid)
         };
-        for _ in 0..tweak!(90) {
+        for _ in 0..tweak!(20) {
             {
                 let s = &mut s.get();
                 draw_move_range(s, &move_range);
@@ -603,6 +603,18 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             let s = &mut s.get();
             s.entities[index].draw_pos = target;
             s.entities[index].pos = *path.last().unwrap();
+        }
+
+        // TODO here attack player if close
+        {
+            cosync::sleep_ticks(20).await;
+            for _ in 0..20 {
+                cosync::sleep_ticks(1).await;
+                let s = &mut s.get();
+                if let Some((_enemy, pos)) = enemies_in_range(s, index).first() {
+                    draw_cursor(s, game_to_world(*pos));
+                }
+            }
         }
     }
 
