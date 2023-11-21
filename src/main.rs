@@ -567,7 +567,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             s.entities[index].pos = *path.last().unwrap();
         }
 
-        // TODO here attack player if close
+        // attack player if close
         {
             cosync::sleep_ticks(20).await;
             for _ in 0..20 {
@@ -576,6 +576,13 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 if let Some((_enemy, pos)) = enemies_in_range(s, index).first() {
                     draw_cursor(s, game_to_world(*pos));
                 }
+            }
+
+            if let Some(enemy) = {
+                let s = &mut s.get();
+                enemies_in_range(s, index).first()
+            }{
+                animate_attack(&mut s, index, *enemy).await;
             }
         }
     }
