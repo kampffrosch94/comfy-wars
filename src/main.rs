@@ -6,7 +6,7 @@ mod game;
 mod loading;
 
 use comfy::*;
-use cosync::{Cosync, CosyncQueueHandle};
+use cosync::{Cosync, CosyncInput, CosyncQueueHandle};
 use data::*;
 use debug::*;
 use dijkstra::*;
@@ -456,46 +456,8 @@ fn handle_input(s: &mut GameState) {
                 s.ui.move_state = MoveState::Attacking;
                 s.ui.chosen_enemy = None;
                 s.co.queue(move |mut s| async move {
-                    // insert attack animation here
-                    let start = s.get().entities[e].draw_pos;
-                    let target = game_to_world(enemy.1);
-                    let mut lerpiness = 0.;
-                    let speed = 5.;
-                    // forward
-                    while lerpiness < 0.5 {
-                        lerpiness += delta() * speed;
-                        {
-                            let s = &mut s.get();
-                            let drawpos = &mut s.entities[e].draw_pos;
-                            *drawpos = start.lerp(target, lerpiness);
-                        }
-                        cosync::sleep_ticks(1).await;
-                    }
-                    // backward
-                    while lerpiness >= 0.0 {
-                        lerpiness -= delta() * speed;
-                        {
-                            let s = &mut s.get();
-                            let drawpos = &mut s.entities[e].draw_pos;
-                            *drawpos = start.lerp(target, lerpiness);
-                        }
-                        cosync::sleep_ticks(1).await;
-                    }
+                    animate_attack(&mut s, e, enemy).await;
 
-                    s.get().entities[e].draw_pos = start;
-                    let mut dmg = 5;
-                    while dmg > 0 {
-                        s.get().entities[enemy.0].hp -= 1;
-                        dmg -= 1;
-                        cosync::sleep_ticks(5).await;
-                    }
-
-                    if s.get().entities[enemy.0].hp <= 0 {
-                        // TODO animate death
-                        s.get().entities.remove(enemy.0);
-                    }
-
-                    // TODO attack back if still alive
                     let s = &mut s.get();
                     s.ui.selected_entity = None;
                     s.ui.move_state = MoveState::None;
@@ -807,4 +769,47 @@ fn draw_dijkstra_map(grid: &Grid<i32>) {
             draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
         }
     }
+}
+
+async fn animate_attack(s: &mut CosyncInput<GameState>, e: Index, enemy: (Index, IVec2)) {
+    // insert attack animation here
+    let start = s.get().entities[e].draw_pos;
+    let target = game_to_world(enemy.1);
+    let mut lerpiness = 0.;
+    let speed = 5.;
+    // forward
+    while lerpiness < 0.5 {
+        lerpiness += delta() * speed;
+        {
+            let s = &mut s.get();
+            let drawpos = &mut s.entities[e].draw_pos;
+            *drawpos = start.lerp(target, lerpiness);
+        }
+        cosync::sleep_ticks(1).await;
+    }
+    // backward
+    while lerpiness >= 0.0 {
+        lerpiness -= delta() * speed;
+        {
+            let s = &mut s.get();
+            let drawpos = &mut s.entities[e].draw_pos;
+            *drawpos = start.lerp(target, lerpiness);
+        }
+        cosync::sleep_ticks(1).await;
+    }
+
+    s.get().entities[e].draw_pos = start;
+    let mut dmg = 5;
+    while dmg > 0 {
+        s.get().entities[enemy.0].hp -= 1;
+        dmg -= 1;
+        cosync::sleep_ticks(5).await;
+    }
+
+    if s.get().entities[enemy.0].hp <= 0 {
+        // TODO animate death
+        s.get().entities.remove(enemy.0);
+    }
+
+    // TODO attack back if still alive
 }
