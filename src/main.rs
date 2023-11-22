@@ -473,6 +473,12 @@ fn handle_input(s: &mut GameState) {
 }
 
 async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
+
+    // reset has_moved
+    for (_index, actor) in s.get().entities.iter_mut() {
+        actor.has_moved = false;
+    }
+
     let ai_units = s
         .get()
         .entities
@@ -594,6 +600,11 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
     }
 
     s.get().phase = GamePhase::PlayerPhase;
+
+    // reset has_moved
+    for (_index, actor) in s.get().entities.iter_mut() {
+        actor.has_moved = false;
+    }
 }
 
 /// debug information and keybindings
