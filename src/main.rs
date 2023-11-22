@@ -291,7 +291,7 @@ fn handle_input(s: &mut GameState) {
 
         for (key, actor) in s.entities.iter() {
             // I am scared of floats
-            if pos.abs_diff_eq(actor.draw_pos, 0.01) {
+            if pos.abs_diff_eq(actor.draw_pos, 0.01) && actor.team == PLAYER_TEAM {
                 s.ui.selected_entity = Some(key);
             }
         }
@@ -581,7 +581,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             if let Some(enemy) = {
                 let s = &mut s.get();
                 enemies_in_range(s, index).first()
-            }{
+            } {
                 animate_attack(&mut s, index, *enemy).await;
             }
         }
