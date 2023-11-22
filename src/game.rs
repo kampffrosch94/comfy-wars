@@ -13,6 +13,7 @@ pub struct Actor {
     pub team: Team,
     pub unit_type: UnitType,
     pub hp: i32,
+    pub has_moved: bool,
 }
 
 pub const HP_MAX: i32 = 10;

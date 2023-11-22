@@ -212,6 +212,7 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
             team: def.team,
             unit_type: def.unit_type,
             hp: HP_MAX,
+            has_moved: false,
         });
     }
 }
@@ -247,7 +248,7 @@ fn draw_game(s: &mut GameState) {
         draw_sprite_ex(
             texture_id("tilemap"),
             actor.draw_pos,
-            WHITE,
+            if actor.has_moved { GRAY } else { WHITE },
             Z_UNIT,
             DrawTextureParams {
                 dest_size: Some(vec2(1.0, 1.0).as_world_size()),
@@ -418,7 +419,8 @@ fn handle_input(s: &mut GameState) {
                         .show(ui, |ui| {
                             // TODO escape or right click reset to start
                             if ui.button("Wait").clicked() {
-                                s.ui.selected_entity = None;
+                                let e = s.ui.selected_entity.take().unwrap();
+                                s.entities[e].has_moved = true;
                                 s.ui.move_state = MoveState::None;
                             }
 
@@ -459,7 +461,8 @@ fn handle_input(s: &mut GameState) {
                     animate_attack(&mut s, e, enemy).await;
 
                     let s = &mut s.get();
-                    s.ui.selected_entity = None;
+                    let e = s.ui.selected_entity.take().unwrap();
+                    s.entities[e].has_moved = true;
                     s.ui.move_state = MoveState::None;
                 });
             }
@@ -585,6 +588,9 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 animate_attack(&mut s, index, *enemy).await;
             }
         }
+
+        // mark as moved
+        s.get().entities[index].has_moved = true;
     }
 
     s.get().phase = GamePhase::PlayerPhase;
