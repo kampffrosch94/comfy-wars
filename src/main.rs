@@ -340,13 +340,13 @@ fn handle_input(s: &mut GameState) {
             // handle move range
             let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             move_range[start_pos] = 9;
-            dijkstra(&mut move_range, &[start_pos], movement_cost(s));
+            dijkstra(&mut move_range, &[start_pos], movement_cost(s, PLAYER_TEAM));
 
             // find goal
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             let goal = mouse_game_grid();
             *grid.get_clamped_mut(goal.x, goal.y) = 99; // TODO increase this when done developing
-            dijkstra(&mut grid, &[goal], movement_cost(s));
+            dijkstra(&mut grid, &[goal], movement_cost(s, PLAYER_TEAM));
             move_range.clamp_values(0, 1);
             grid.mul_inplace(&move_range);
 
@@ -362,7 +362,7 @@ fn handle_input(s: &mut GameState) {
                 .map(|(pos, _)| pos)
                 .unwrap();
             seeds.push(highest_reachable_pos);
-            dijkstra(&mut grid, &seeds, movement_cost(s));
+            dijkstra(&mut grid, &seeds, movement_cost(s, PLAYER_TEAM));
             grid.mul_inplace(&move_range);
 
             // disallow moving through enemies
@@ -473,7 +473,6 @@ fn handle_input(s: &mut GameState) {
 }
 
 async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
-
     // reset has_moved
     for (_index, actor) in s.get().entities.iter_mut() {
         actor.has_moved = false;
@@ -495,7 +494,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             // handle move range
             let mut move_range = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             move_range[start_pos] = 9;
-            dijkstra(&mut move_range, &[start_pos], movement_cost(s));
+            dijkstra(&mut move_range, &[start_pos], movement_cost(s, ENEMY_TEAM));
             move_range.clamp_values(0, 1);
 
             // find goal position
@@ -509,9 +508,8 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             for pos in enemy_positions.iter() {
                 grid[*pos] = 30;
             }
-            dijkstra(&mut grid, &enemy_positions, movement_cost(s));
+            dijkstra(&mut grid, &enemy_positions, movement_cost(s, ENEMY_TEAM));
             grid.mul_inplace(&move_range);
-            let debug_grid = grid.clone();
 
             // allow passing through allies, but don't stop on them
             // stop on your current position if its already the best
@@ -531,13 +529,11 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
 
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             grid[highest_reachable_pos] = 30;
-            dijkstra(&mut grid, &[highest_reachable_pos], movement_cost(s));
+            dijkstra(&mut grid, &[highest_reachable_pos], movement_cost(s, ENEMY_TEAM));
             grid.mul_inplace(&move_range);
+            dbg!(highest_reachable_pos);
 
-            // disallow moving through enemies
-            for (_, actor) in s.entities.iter().filter(|(_i, a)| a.team != actor.team) {
-                grid[actor.pos] = -99;
-            }
+            let debug_grid = grid.clone();
 
             // compute path
             let path = dijkstra_path(&grid, start_pos);
@@ -733,10 +729,19 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
     }
 }
 
-fn movement_cost<'a>(s: &'a GameState) -> impl Fn(IVec2) -> i32 + 'a {
-    let cost_function = |v| -> i32 {
-        let ground = *s.grids.ground.get_clamped_v(v);
-        let terrain = *s.grids.terrain.get_clamped_v(v);
+fn movement_cost<'a>(s: &'a GameState, team: Team) -> impl Fn(IVec2) -> i32 + 'a {
+    let blocked: HashSet<IVec2> = s
+        .entities
+        .iter()
+        .filter_map(|(_i, e)| if e.team != team { Some(e.pos) } else { None })
+        .collect();
+
+    let cost_function = move |pos| -> i32 {
+        if blocked.contains(&pos) {
+            return 9999;
+        }
+        let ground = *s.grids.ground.get_clamped_v(pos);
+        let terrain = *s.grids.terrain.get_clamped_v(pos);
         use GroundType as G;
         use TerrainType as T;
         match (ground, terrain) {
