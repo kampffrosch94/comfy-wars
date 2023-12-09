@@ -405,8 +405,8 @@ dependencies = [
 
 [[package]]
 name = "comfy"
-version = "0.3.0"
-source = "git+https://github.com/darthdeus/comfy#196b682ed22d4ecbe00b0a5eb80cb1313fb103d2"
+version = "0.3.1"
+source = "git+https://github.com/darthdeus/comfy#4cbb12e21bd9a24e3e6f35c9d2da957b12eb8d15"
 dependencies = [
  "comfy-core",
  "comfy-wgpu",
@@ -426,7 +426,7 @@ dependencies = [
 [[package]]
 name = "comfy-core"
 version = "0.3.0"
-source = "git+https://github.com/darthdeus/comfy#196b682ed22d4ecbe00b0a5eb80cb1313fb103d2"
+source = "git+https://github.com/darthdeus/comfy#4cbb12e21bd9a24e3e6f35c9d2da957b12eb8d15"
 dependencies = [
  "ahash",
  "anyhow",
@@ -452,7 +452,6 @@ dependencies = [
  "fxhash",
  "getrandom",
  "glam",
- "half",
  "hecs",
  "image",
  "inline_tweak",
@@ -495,7 +494,7 @@ dependencies = [
 [[package]]
 name = "comfy-wgpu"
 version = "0.3.0"
-source = "git+https://github.com/darthdeus/comfy#196b682ed22d4ecbe00b0a5eb80cb1313fb103d2"
+source = "git+https://github.com/darthdeus/comfy#4cbb12e21bd9a24e3e6f35c9d2da957b12eb8d15"
 dependencies = [
  "bytemuck",
  "comfy-core",
@@ -907,12 +906,12 @@ dependencies = [
 
 [[package]]
 name = "exr"
-version = "1.6.4"
+version = "1.71.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "279d3efcc55e19917fff7ab3ddd6c14afb6a90881a0078465196fe2f99d08c56"
+checksum = "832a761f35ab3e6664babfbdc6cef35a4860e816ec3916dcfd0882954e98a8a8"
 dependencies = [
  "bit_field",
- "flume 0.10.14",
+ "flume",
  "half",
  "lebe",
  "miniz_oxide",
@@ -950,19 +949,6 @@ checksum = "46303f565772937ffe1d394a4fac6f411c6013172fadde9dcdb1e147a086940e"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
-]
-
-[[package]]
-name = "flume"
-version = "0.10.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1657b4441c3403d9f7b3409e47575237dac27b1b5726df654a6ecbf92f0f7577"
-dependencies = [
- "futures-core",
- "futures-sink",
- "nanorand",
- "pin-project",
- "spin",
 ]
 
 [[package]]
@@ -1188,14 +1174,11 @@ dependencies = [
 
 [[package]]
 name = "half"
-version = "2.3.1"
+version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc52e53916c08643f1b56ec082790d1e86a32e58dc5268f897f313fbae7b4872"
+checksum = "02b4af3693f1b705df946e9fe5631932443781d0aabb423b62fcd4d73f6d2fd0"
 dependencies = [
- "bytemuck",
- "cfg-if",
  "crunchy",
- "num-traits",
 ]
 
 [[package]]
@@ -1508,12 +1491,6 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
-
-[[package]]
-name = "libm"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "libredox"
@@ -1835,7 +1812,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39e3200413f237f41ab11ad6d161bc7239c84dcb631773ccd7de3dfe4b5c267c"
 dependencies = [
  "autocfg",
- "libm",
 ]
 
 [[package]]
@@ -2030,26 +2006,6 @@ name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
-
-[[package]]
-name = "pin-project"
-version = "1.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fda4ed1c6c173e3fc7a83629421152e01d7b1f9b7f65fb301e490e8cfc656422"
-dependencies = [
- "pin-project-internal",
-]
-
-[[package]]
-name = "pin-project-internal"
-version = "1.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4359fd9c9171ec6e8c62926d6faaf553a8dc3f64e1507e76da7911b4f6a04405"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.39",
-]
 
 [[package]]
 name = "pkg-config"
@@ -2786,7 +2742,7 @@ checksum = "30e7d227c9f961f2061c26f4cb0fbd4df0ef37e056edd0931783599d6c94ef24"
 dependencies = [
  "arrayvec",
  "cfg-if",
- "flume 0.11.0",
+ "flume",
  "js-sys",
  "log",
  "naga",
