@@ -292,7 +292,10 @@ fn handle_input(s: &mut GameState) {
 
         for (key, actor) in s.entities.iter() {
             // I am scared of floats
-            if pos.abs_diff_eq(actor.draw_pos, 0.01) && actor.team == PLAYER_TEAM {
+            if pos.abs_diff_eq(actor.draw_pos, 0.01)
+                && actor.team == PLAYER_TEAM
+                && actor.has_moved == false
+            {
                 s.ui.selected_entity = Some(key);
             }
         }
@@ -529,7 +532,11 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
 
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
             grid[highest_reachable_pos] = 30;
-            dijkstra(&mut grid, &[highest_reachable_pos], movement_cost(s, ENEMY_TEAM));
+            dijkstra(
+                &mut grid,
+                &[highest_reachable_pos],
+                movement_cost(s, ENEMY_TEAM),
+            );
             grid.mul_inplace(&move_range);
             dbg!(highest_reachable_pos);
 
