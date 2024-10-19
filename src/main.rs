@@ -4,6 +4,8 @@ mod debug;
 mod dijkstra;
 mod game;
 mod loading;
+mod util;
+mod grids;
 
 use comfy::*;
 use cosync::{Cosync, CosyncInput, CosyncQueueHandle};

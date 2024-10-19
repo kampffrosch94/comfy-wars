@@ -1,5 +1,5 @@
 use comfy::{ivec2, IVec2, Itertools};
-use grids::Grid;
+use crate::grids::Grid;
 
 pub fn get_neighbors<T>(pos: IVec2, grid: &Grid<T>) -> Vec<IVec2> {
     let x = pos.x;
