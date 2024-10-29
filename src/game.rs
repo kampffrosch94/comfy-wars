@@ -1,14 +1,17 @@
 /// some gameplay functions
 use crate::*;
-use thunderdome::*;
+use crate::util::*;
 
 pub const ENEMY_TEAM: Team = Team::Red;
 pub const PLAYER_TEAM: Team = Team::Blue;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Actor {
+    #[serde(with = "IVec2Proxy")]
     pub pos: IVec2,
+    #[serde(with = "Vec2Proxy")]
     pub draw_pos: Vec2,
+    #[serde(with = "IVec2Proxy")]
     pub sprite_coords: IVec2,
     pub team: Team,
     pub unit_type: UnitType,
@@ -18,20 +21,20 @@ pub struct Actor {
 
 pub const HP_MAX: i32 = 10;
 
-#[derive(DeJson, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(DeJson, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Team {
     Blue,
     Red,
 }
 
-#[derive(DeJson, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(DeJson, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnitType {
     Infantry,
     Tank,
 }
 
 /// used for determining movement cost
-#[derive(Default, DeJson, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, DeJson, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GroundType {
     #[default]
     Ground,
@@ -39,7 +42,7 @@ pub enum GroundType {
 }
 
 /// used for determining movement cost
-#[derive(Default, DeJson, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, DeJson, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TerrainType {
     #[default]
     None,
@@ -48,7 +51,7 @@ pub enum TerrainType {
 }
 
 /// returns units of other team which are in attack range
-pub fn enemies_in_range(s: &GameState, me: Index) -> Vec<(Index, IVec2)> {
+pub fn enemies_in_range(s: &GameState, me: ActorKey) -> Vec<(ActorKey, IVec2)> {
     let pos = s.entities[me].pos;
     let my_team = s.entities[me].team;
     let neighbors = get_neighbors(pos, &s.grids.ground);
@@ -60,7 +63,7 @@ pub fn enemies_in_range(s: &GameState, me: Index) -> Vec<(Index, IVec2)> {
         .collect_vec()
 }
 
-pub fn actor_at_pos(s: &GameState, pos: IVec2) -> Option<Index> {
+pub fn actor_at_pos(s: &GameState, pos: IVec2) -> Option<ActorKey> {
     for (index, actor) in s.entities.iter() {
         if actor.pos == pos {
             return Some(index);

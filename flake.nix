@@ -48,13 +48,11 @@
             vulkan-validation-layers
 
             # X
-            # xorg.libX11
-            # xorg.libXcursor
-            # xorg.libXi
-            # xorg.libXrandr
+            xorg.libX11
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXrandr
 
-            # wayland
-            wayland
 
             # extra tooling
             tracy # profiler, call with ~Tracy~
@@ -69,7 +67,8 @@
               alsaLib # sound
               vulkan-loader
               libxkbcommon # keyboard
-              wayland
+              xorg.libX11
+              xorg.libXi 
             ];
         };
       });

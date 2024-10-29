@@ -16,6 +16,8 @@ use game::*;
 use grids::*;
 use loading::*;
 use nanoserde::*;
+use serde::{Deserialize, Serialize};
+use slotmap::{new_key_type, SlotMap};
 
 simple_game!("comfy wars", GameWrapper, setup, update);
 
@@ -49,14 +51,27 @@ impl GameWrapper {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct GameState {
+    #[serde(skip, default= "null_object_queue_handle" )] 
     co: CosyncQueueHandle<GameState>,
     ui: UIState,
+    #[serde(skip)] 
     sprites: HashMap<String, SpriteData>,
+    #[serde(skip)] 
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
-    entities: Arena<Actor>,
+    entities: SlotMap<ActorKey, Actor>,
     phase: GamePhase,
+}
+
+new_key_type! {
+    struct ActorKey;
+}
+
+fn null_object_queue_handle() -> CosyncQueueHandle<GameState> {
+        let cosync = Cosync::new();
+        cosync.create_queue_handle()
 }
 
 impl GameState {
@@ -73,24 +88,27 @@ impl GameState {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 enum GamePhase {
     #[default]
     PlayerPhase,
     EnemyPhase,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 struct UIState {
+    #[serde(skip)]
     right_click_menu_pos: Option<Vec2>,
     draw_dijkstra_map: bool,
     draw_ai_map: bool,
-    selected_entity: Option<Index>,
+    #[serde(skip)]
+    selected_entity: Option<ActorKey>,
     move_state: MoveState,
+    #[serde(skip)]
     chosen_enemy: Option<usize>,
 }
 
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum MoveState {
     #[default]
     None,
@@ -104,7 +122,7 @@ enum MoveState {
 /// all grids in here have the same dimensions
 /// bigger x is right
 /// bigger y is down (reverse of what comfy uses atm)
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Grids {
     ground: Grid<GroundType>,
     terrain: Grid<TerrainType>,
@@ -231,6 +249,13 @@ fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
         color: epaint::Color32::BLACK,
     };
     egui().set_visuals(visuals);
+
+    if is_key_pressed(KeyCode::F5) {
+	println!("Saving game.");
+    }
+    if is_key_pressed(KeyCode::F9) {
+	println!("Loading game.");
+    }
 
     let c_x = tweak!(6.);
     let c_y = tweak!(-7.);
@@ -809,7 +834,7 @@ fn draw_dijkstra_map(grid: &Grid<i32>) {
     }
 }
 
-async fn animate_attack(s: &mut CosyncInput<GameState>, e: Index, enemy: (Index, IVec2)) {
+async fn animate_attack(s: &mut CosyncInput<GameState>, e: ActorKey, enemy: (ActorKey, IVec2)) {
     // insert attack animation here
     let start = s.get().entities[e].draw_pos;
     let target = game_to_world(enemy.1);
