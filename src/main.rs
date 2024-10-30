@@ -242,7 +242,6 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
 }
 
 fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
-    span_with_timing!("kf/update");
     let co = &mut s.cosync;
     let s = &mut s.game_state;
     co.run_until_stall(s);

@@ -51,11 +51,6 @@ pub use comfy::epaint;
 // atomic_refcell
 pub use comfy::AtomicRefCell;
 
-// Tracy
-pub use comfy::span_with_timing;
-pub use comfy::span;
-pub use comfy::timing_start;
-
 // Inline Tweak
 pub use inline_tweak::tweak;
 
