@@ -45,9 +45,6 @@ pub use comfy::is_mouse_button_pressed;
 pub use comfy::egui;
 pub use comfy::epaint;
 
-// atomic_refcell
-pub use comfy::AtomicRefCell;
-
 // Inline Tweak
 pub use inline_tweak::tweak;
 

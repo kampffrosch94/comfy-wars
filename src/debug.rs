@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::comfy_compat::*;
 use std::sync::LazyLock as Lazy;
+use atomic_refcell::AtomicRefCell;
 
 static DEBUG_LINES: Lazy<AtomicRefCell<Vec<String>>> =
     Lazy::new(|| AtomicRefCell::new(Default::default()));

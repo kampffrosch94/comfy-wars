@@ -17,6 +17,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 slotmap = { version = "1.0.7", features = ["serde"] }
 itertools = "0.13.0"
 inline_tweak = "1.1.1"
+atomic_refcell = "0.1.13"
 
 [profile.dev]
 opt-level = 1
