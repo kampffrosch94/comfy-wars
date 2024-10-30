@@ -2,6 +2,7 @@
 mod data;
 #[macro_use]
 mod debug;
+mod camera;
 mod comfy_compat;
 mod dijkstra;
 mod egui_macroquad;
@@ -14,6 +15,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use anyhow::Result;
+use camera::CameraWrapper;
 use comfy_compat::*;
 use cosync::{Cosync, CosyncInput, CosyncQueueHandle};
 use data::*;
@@ -112,6 +114,8 @@ pub struct GameState {
     grids: Grids,
     entities: SlotMap<ActorKey, Actor>,
     phase: GamePhase,
+    #[serde(skip)]
+    camera: CameraWrapper,
 }
 
 new_key_type! {
@@ -135,6 +139,7 @@ impl GameState {
             phase: Default::default(),
             ground_sprites: Default::default(),
             terrain_sprites: Default::default(),
+            camera: Default::default(),
         }
     }
 }
@@ -246,23 +251,26 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
             _ => panic!("unsupported ground type {}", i),
         });
 
-
-        s.ground_sprites = layer.auto_tiles.iter().map(|tile| {
-	    let source_rect = Rect {
-		x: tile.src[0] as _,
-		y: tile.src[1] as _,
-		w: GRIDSIZE as _,
-		h: GRIDSIZE as _,
-	    };
-	    SpriteWithPos {
-		params: DrawTextureParams {
-		    source: Some(source_rect),
-		    ..Default::default()
-		},
-		texture: texture.clone(),
-		pos: vec2(tile.px[0], tile.px[1]),
-	    }
-        }).collect_vec();
+        s.ground_sprites = layer
+            .auto_tiles
+            .iter()
+            .map(|tile| {
+                let source_rect = Rect {
+                    x: tile.src[0] as _,
+                    y: tile.src[1] as _,
+                    w: GRIDSIZE as _,
+                    h: GRIDSIZE as _,
+                };
+                SpriteWithPos {
+                    params: DrawTextureParams {
+                        source: Some(source_rect),
+                        ..Default::default()
+                    },
+                    texture: texture.clone(),
+                    pos: vec2(tile.px[0], tile.px[1]),
+                }
+            })
+            .collect_vec();
     }
 
     for layer in ldtk
@@ -277,22 +285,26 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
             5 => TerrainType::Forest,
             _ => panic!("unsupported terrain type {}", i),
         });
-        s.terrain_sprites = layer.auto_tiles.iter().map(|tile| {
-	    let source_rect = Rect {
-		x: tile.src[0] as _,
-		y: tile.src[1] as _,
-		w: GRIDSIZE as _,
-		h: GRIDSIZE as _,
-	    };
-	    SpriteWithPos {
-		params: DrawTextureParams {
-		    source: Some(source_rect),
-		    ..Default::default()
-		},
-		texture: texture.clone(),
-		pos: vec2(tile.px[0], tile.px[1]),
-	    }
-        }).collect_vec();
+        s.terrain_sprites = layer
+            .auto_tiles
+            .iter()
+            .map(|tile| {
+                let source_rect = Rect {
+                    x: tile.src[0] as _,
+                    y: tile.src[1] as _,
+                    w: GRIDSIZE as _,
+                    h: GRIDSIZE as _,
+                };
+                SpriteWithPos {
+                    params: DrawTextureParams {
+                        source: Some(source_rect),
+                        ..Default::default()
+                    },
+                    texture: texture.clone(),
+                    pos: vec2(tile.px[0], tile.px[1]),
+                }
+            })
+            .collect_vec();
     }
 
     for me in map_entities {
@@ -348,11 +360,10 @@ fn update(s: &mut GameWrapper) {
 fn draw_game(s: &mut GameState) {
     // draw tilemap
     for sprite in s.ground_sprites.iter().chain(s.terrain_sprites.iter()) {
-	let (x,y) = sprite.pos.into();
-	draw_texture_ex(&sprite.texture, x, y, WHITE, sprite.params.clone())
+        let (x, y) = sprite.pos.into();
+        draw_texture_ex(&sprite.texture, x, y, WHITE, sprite.params.clone())
     }
 
-    
     // draw actors
     for (_index, actor) in s.entities.iter() {
         /*
@@ -396,11 +407,11 @@ fn draw_game(s: &mut GameState) {
 /// also does drawing in immediate mode
 fn handle_input(s: &mut GameState) {
     if is_mouse_button_released(MouseButton::Right) {
-        s.ui.right_click_menu_pos = Some(mouse_world());
+        s.ui.right_click_menu_pos = Some(s.camera.mouse_world());
     }
     if is_mouse_button_released(MouseButton::Left) && s.ui.move_state == MoveState::None {
         s.ui.right_click_menu_pos = None;
-        let pos = grid_world_pos(mouse_world());
+        let pos = grid_world_pos(s.camera.mouse_world());
         s.ui.selected_entity = None;
 
         for (key, actor) in s.entities.iter() {
@@ -421,7 +432,7 @@ fn handle_input(s: &mut GameState) {
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
         draw_cursor(s, wpos);
-        let pos = world_to_screen(wpos);
+        let pos = s.camera.world_to_screen(wpos);
         egui::Area::new(egui::Id::new("context_menu"))
             .fixed_pos(egui::pos2(pos.x, pos.y))
             .show(&egui(), |ui| {
@@ -462,7 +473,7 @@ fn handle_input(s: &mut GameState) {
 
             // find goal
             let mut grid = Grid::new(s.grids.ground.width, s.grids.ground.height, 0);
-            let goal = mouse_game_grid();
+            let goal = mouse_game_grid(s);
             *grid.get_clamped_mut(goal.x, goal.y) = 99; // TODO increase this when done developing
             dijkstra(&mut grid, &[goal], movement_cost(s, PLAYER_TEAM));
             move_range.clamp_values(0, 1);
@@ -528,7 +539,7 @@ fn handle_input(s: &mut GameState) {
             }
         }
         if s.ui.move_state == MoveState::Confirm {
-            let pos = world_to_screen(s.entities[e].draw_pos);
+            let pos = s.camera.world_to_screen(s.entities[e].draw_pos);
             egui::Area::new(egui::Id::new("move confirmation"))
                 .fixed_pos(egui::pos2(pos.x, pos.y))
                 .show(&egui(), |ui| {
@@ -589,7 +600,7 @@ fn handle_input(s: &mut GameState) {
             }
         }
     } else {
-        draw_cursor(s, mouse_world())
+        draw_cursor(s, s.camera.mouse_world())
     }
 }
 
@@ -732,7 +743,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
 /// also does drawing in immediate mode
 fn handle_debug_input(s: &mut GameState) {
     egui::Window::new("kf_debug_info").show(&egui(), |ui| {
-        let pos = grid_world_pos(mouse_world());
+        let pos = grid_world_pos(s.camera.mouse_world());
         ui.label(format!("mouse world grid pos: {}", pos));
         let pos = ivec2(pos.x as _, -pos.y as _);
         ui.label(format!(
@@ -889,8 +900,8 @@ fn game_to_world(v: IVec2) -> Vec2 {
     vec2(v.x as _, -v.y as _)
 }
 
-fn mouse_game_grid() -> IVec2 {
-    world_to_game(mouse_world())
+fn mouse_game_grid(s: &GameState) -> IVec2 {
+    world_to_game(s.camera.mouse_world())
 }
 
 fn draw_dijkstra_map(grid: &Grid<i32>) {
