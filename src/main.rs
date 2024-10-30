@@ -47,7 +47,7 @@ async fn main() {
         clear_background(BLACK);
 
         egui_macroquad::ui(|egui_ctx| {
-	    update(game_wrapper);
+            update(game_wrapper);
         });
 
         egui_macroquad::draw();
@@ -90,6 +90,12 @@ struct Sprite {
     texture: Texture2D,
 }
 
+struct SpriteWithPos {
+    params: DrawTextureParams,
+    texture: Texture2D,
+    pos: Vec2,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     #[serde(skip, default = "null_object_queue_handle")]
@@ -99,6 +105,10 @@ pub struct GameState {
     sprites: HashMap<String, Sprite>,
     #[serde(skip)]
     entity_defs: HashMap<String, EntityDef>,
+    #[serde(skip)]
+    ground_sprites: Vec<SpriteWithPos>,
+    #[serde(skip)]
+    terrain_sprites: Vec<SpriteWithPos>,
     grids: Grids,
     entities: SlotMap<ActorKey, Actor>,
     phase: GamePhase,
@@ -123,6 +133,8 @@ impl GameState {
             co,
             entities: Default::default(),
             phase: Default::default(),
+            ground_sprites: Default::default(),
+            terrain_sprites: Default::default(),
         }
     }
 }
@@ -233,23 +245,24 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
             2 => GroundType::Water,
             _ => panic!("unsupported ground type {}", i),
         });
-        for tile in layer.auto_tiles.iter() {
-            /*
-                commands().spawn((
-                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
-                        tile.src[0],
-                        tile.src[1],
-                        GRIDSIZE,
-                        GRIDSIZE,
-                    ),
-                    Transform::position(vec2(
-                        tile.px[0] / GRIDSIZE as f32,
-                        -tile.px[1] / GRIDSIZE as f32,
-                    )),
-                    Ground,
-                ));
-            */
-        }
+
+
+        s.ground_sprites = layer.auto_tiles.iter().map(|tile| {
+	    let source_rect = Rect {
+		x: tile.src[0] as _,
+		y: tile.src[1] as _,
+		w: GRIDSIZE as _,
+		h: GRIDSIZE as _,
+	    };
+	    SpriteWithPos {
+		params: DrawTextureParams {
+		    source: Some(source_rect),
+		    ..Default::default()
+		},
+		texture: texture.clone(),
+		pos: vec2(tile.px[0], tile.px[1]),
+	    }
+        }).collect_vec();
     }
 
     for layer in ldtk
@@ -258,29 +271,28 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
         .flat_map(|level| level.layers.iter())
         .filter(|layer| layer.id == "infrastructuregrid")
     {
-        for tile in layer.auto_tiles.iter() {
-            s.grids.terrain = grid_from_layer(layer, |i| match i {
-                0 => TerrainType::None,
-                1 | 2 | 3 | 4 => TerrainType::Street,
-                5 => TerrainType::Forest,
-                _ => panic!("unsupported terrain type {}", i),
-            });
-            /*
-                commands().spawn((
-                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
-                        tile.src[0],
-                        tile.src[1],
-                        GRIDSIZE,
-                        GRIDSIZE,
-                    ),
-                    Transform::position(vec2(
-                        tile.px[0] / GRIDSIZE as f32,
-                        -tile.px[1] / GRIDSIZE as f32,
-                    )),
-                    Infrastructure,
-                ));
-            */ // TODO
-        }
+        s.grids.terrain = grid_from_layer(layer, |i| match i {
+            0 => TerrainType::None,
+            1 | 2 | 3 | 4 => TerrainType::Street,
+            5 => TerrainType::Forest,
+            _ => panic!("unsupported terrain type {}", i),
+        });
+        s.terrain_sprites = layer.auto_tiles.iter().map(|tile| {
+	    let source_rect = Rect {
+		x: tile.src[0] as _,
+		y: tile.src[1] as _,
+		w: GRIDSIZE as _,
+		h: GRIDSIZE as _,
+	    };
+	    SpriteWithPos {
+		params: DrawTextureParams {
+		    source: Some(source_rect),
+		    ..Default::default()
+		},
+		texture: texture.clone(),
+		pos: vec2(tile.px[0], tile.px[1]),
+	    }
+        }).collect_vec();
     }
 
     for me in map_entities {
@@ -334,6 +346,13 @@ fn update(s: &mut GameWrapper) {
 }
 
 fn draw_game(s: &mut GameState) {
+    // draw tilemap
+    for sprite in s.ground_sprites.iter().chain(s.terrain_sprites.iter()) {
+	let (x,y) = sprite.pos.into();
+	draw_texture_ex(&sprite.texture, x, y, WHITE, sprite.params.clone())
+    }
+
+    
     // draw actors
     for (_index, actor) in s.entities.iter() {
         /*

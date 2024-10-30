@@ -11,6 +11,13 @@ pub struct Grid<T> {
     pub height: i32,
 }
 
+impl<T> Default for Grid<T> {
+    fn default() -> Self {
+        Self { data: Default::default(), width: Default::default(), height: Default::default() }
+    }
+}
+
+
 impl<T: Clone> Grid<T> {
     pub fn new(width: i32, height: i32, value: T) -> Self {
         Self {
