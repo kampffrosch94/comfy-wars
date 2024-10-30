@@ -879,25 +879,30 @@ fn movement_cost<'a>(s: &'a GameState, team: Team) -> impl Fn(IVec2) -> i32 + 'a
 }
 
 fn grid_world_pos(v: Vec2) -> Vec2 {
-    Vec2 {
-        x: v.x.round(),
-        y: v.y.round(),
-    }
+    let mut pos = grid_pos(v);
+    pos.x *= GRIDSIZE;
+    pos.y *= GRIDSIZE;
+    pos.as_vec2()
 }
 
 fn grid_pos(v: Vec2) -> IVec2 {
-    let mut r = grid_world_pos(v).as_ivec2();
-    r.y *= -1;
+    let pos = Vec2 {
+        x: v.x.round(),
+        y: v.y.round(),
+    };
+    let mut r = pos.as_ivec2();
+    r.y /= GRIDSIZE;
+    r.x /= GRIDSIZE;
     r
 }
 
 fn world_to_game(v: Vec2) -> IVec2 {
     let v = grid_world_pos(v);
-    ivec2(v.x as _, -v.y as _)
+    ivec2(v.x as i32 / GRIDSIZE, v.y as i32 / GRIDSIZE)
 }
 
 fn game_to_world(v: IVec2) -> Vec2 {
-    vec2(v.x as _, -v.y as _)
+    vec2((v.x * GRIDSIZE) as f32, (v.y * GRIDSIZE) as f32)
 }
 
 fn mouse_game_grid(s: &GameState) -> IVec2 {
