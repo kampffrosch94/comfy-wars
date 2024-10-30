@@ -45,7 +45,4 @@ pub use comfy::is_mouse_button_pressed;
 pub use comfy::egui;
 pub use comfy::epaint;
 
-// Inline Tweak
-pub use inline_tweak::tweak;
-
 
