@@ -1,8 +1,8 @@
 // vendored
 #![allow(dead_code)]
+use crate::comfy_compat::*;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Index, IndexMut, Mul};
-use crate::comfy_compat::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Grid<T> {
@@ -367,16 +367,18 @@ impl<T: Clone> Grid<T> {
     }
 }
 
-impl<T: Clone> Index<(i32, i32)> for Grid<T> {
+impl<T: Clone, Pos: Into<(i32, i32)>> Index<Pos> for Grid<T> {
     type Output = T;
 
-    fn index(&self, (x, y): (i32, i32)) -> &Self::Output {
+    fn index(&self, pos: Pos) -> &Self::Output {
+        let (x, y) = pos.into();
         &self.data[(x + y * self.width) as usize]
     }
 }
 
-impl<T: Clone> IndexMut<(i32, i32)> for Grid<T> {
-    fn index_mut(&mut self, (x, y): (i32, i32)) -> &mut Self::Output {
+impl<T: Clone, Pos: Into<(i32, i32)>> IndexMut<Pos> for Grid<T> {
+    fn index_mut(&mut self, pos: Pos) -> &mut Self::Output {
+        let (x, y) = pos.into();
         &mut self.data[(x + y * self.width) as usize]
     }
 }
@@ -394,21 +396,6 @@ impl<T: Clone> IndexMut<(i32, i32)> for Grid<T> {
 //         &mut self.data[(x as i32 + y as i32 * self.width) as usize]
 //     }
 // }
-
-impl<T: Clone> Index<IVec2> for Grid<T> {
-    type Output = T;
-
-    fn index(&self, index: IVec2) -> &Self::Output {
-        &self[(index.x, index.y)]
-    }
-}
-
-impl<T: Clone> IndexMut<IVec2> for Grid<T> {
-    fn index_mut(&mut self, index: IVec2) -> &mut Self::Output {
-        &mut self[(index.x, index.y)]
-    }
-}
-
 
 #[test]
 fn test_stuff() {

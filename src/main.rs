@@ -1,31 +1,59 @@
+#![allow(unused)]
 mod data;
 #[macro_use]
 mod debug;
+mod comfy_compat;
 mod dijkstra;
+mod egui_macroquad;
 mod game;
+mod grids;
 mod loading;
 mod util;
-mod grids;
-mod comfy_compat;
 
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use anyhow::Result;
+use comfy_compat::*;
 use cosync::{Cosync, CosyncInput, CosyncQueueHandle};
 use data::*;
 use debug::*;
 use dijkstra::*;
+use egui::epaint;
 use game::*;
 use grids::*;
+use inline_tweak::tweak;
 use itertools::Itertools;
 use loading::*;
+use macroquad::prelude::*;
 use nanoserde::*;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
-use comfy_compat::*;
-use inline_tweak::tweak;
 
-simple_game!("comfy wars", GameWrapper, setup, update);
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "comfy wars".to_owned(),
+        fullscreen: false,
+        high_dpi: true,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
+async fn main() {
+    let game_wrapper = &mut GameWrapper::new();
+    setup(game_wrapper).await.unwrap();
+    loop {
+        clear_background(BLACK);
+
+        egui_macroquad::ui(|egui_ctx| {
+	    update(game_wrapper);
+        });
+
+        egui_macroquad::draw();
+        next_frame().await
+    }
+}
 
 /// ECS marker
 struct Ground;
@@ -47,24 +75,29 @@ pub struct GameWrapper {
 }
 
 impl GameWrapper {
-    pub fn new(c: &mut EngineState) -> Self {
+    pub fn new() -> Self {
         let cosync = Cosync::new();
         let handle = cosync.create_queue_handle();
         Self {
             cosync,
-            game_state: GameState::new(c, handle),
+            game_state: GameState::new(handle),
         }
     }
 }
 
+struct Sprite {
+    params: DrawTextureParams,
+    texture: Texture2D,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
-    #[serde(skip, default= "null_object_queue_handle" )] 
+    #[serde(skip, default = "null_object_queue_handle")]
     co: CosyncQueueHandle<GameState>,
     ui: UIState,
-    #[serde(skip)] 
-    sprites: HashMap<String, SpriteData>,
-    #[serde(skip)] 
+    #[serde(skip)]
+    sprites: HashMap<String, Sprite>,
+    #[serde(skip)]
     entity_defs: HashMap<String, EntityDef>,
     grids: Grids,
     entities: SlotMap<ActorKey, Actor>,
@@ -76,12 +109,12 @@ new_key_type! {
 }
 
 fn null_object_queue_handle() -> CosyncQueueHandle<GameState> {
-        let cosync = Cosync::new();
-        cosync.create_queue_handle()
+    let cosync = Cosync::new();
+    cosync.create_queue_handle()
 }
 
 impl GameState {
-    pub fn new(_c: &mut EngineState, co: CosyncQueueHandle<GameState>) -> Self {
+    pub fn new(co: CosyncQueueHandle<GameState>) -> Self {
         Self {
             ui: Default::default(),
             sprites: Default::default(),
@@ -145,7 +178,7 @@ impl Default for Grids {
 
 const GRIDSIZE: i32 = 16;
 
-fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
+async fn setup(s: &mut GameWrapper) -> Result<()> {
     let s = &mut s.game_state;
     // load tiles
     let ldtk: LDTK = DeJson::deserialize_json(kf_include_str!("/assets/comfy_wars.ldtk")).unwrap();
@@ -155,14 +188,31 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
         s.grids.ground = Grid::new(w, h, Default::default());
     }
 
-    c.load_texture_from_bytes(
-        "tilemap",
-        kf_include_bytes!("/assets/tilemap/tilemap_packed.png"),
-    );
+    let texture = load_texture("assets/tilemap/tilemap_packed.png")
+        .await
+        .expect("Tilemap not found");
+    texture.set_filter(FilterMode::Nearest);
 
     // load sprites
     let sprites_str = kf_include_str!("/assets/sprites.json");
-    s.sprites = DeJson::deserialize_json(sprites_str).unwrap();
+    let sprite_datas: HashMap<String, SpriteData> = DeJson::deserialize_json(sprites_str).unwrap();
+    s.sprites = HashMap::new();
+    for (name, data) in sprite_datas.into_iter() {
+        let source_rect = Rect {
+            x: data.x as _,
+            y: data.y as _,
+            w: GRIDSIZE as _,
+            h: GRIDSIZE as _,
+        };
+        let sprite = Sprite {
+            params: DrawTextureParams {
+                source: Some(source_rect),
+                ..Default::default()
+            },
+            texture: texture.clone(),
+        };
+        s.sprites.insert(name, sprite);
+    }
 
     // load entity definitions
     let ed = kf_include_str!("/assets/entities_def.json");
@@ -184,19 +234,21 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
             _ => panic!("unsupported ground type {}", i),
         });
         for tile in layer.auto_tiles.iter() {
-            commands().spawn((
-                Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
-                    tile.src[0],
-                    tile.src[1],
-                    GRIDSIZE,
-                    GRIDSIZE,
-                ),
-                Transform::position(vec2(
-                    tile.px[0] / GRIDSIZE as f32,
-                    -tile.px[1] / GRIDSIZE as f32,
-                )),
-                Ground,
-            ));
+            /*
+                commands().spawn((
+                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_GROUND, WHITE).with_rect(
+                        tile.src[0],
+                        tile.src[1],
+                        GRIDSIZE,
+                        GRIDSIZE,
+                    ),
+                    Transform::position(vec2(
+                        tile.px[0] / GRIDSIZE as f32,
+                        -tile.px[1] / GRIDSIZE as f32,
+                    )),
+                    Ground,
+                ));
+            */
         }
     }
 
@@ -213,19 +265,21 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
                 5 => TerrainType::Forest,
                 _ => panic!("unsupported terrain type {}", i),
             });
-            commands().spawn((
-                Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
-                    tile.src[0],
-                    tile.src[1],
-                    GRIDSIZE,
-                    GRIDSIZE,
-                ),
-                Transform::position(vec2(
-                    tile.px[0] / GRIDSIZE as f32,
-                    -tile.px[1] / GRIDSIZE as f32,
-                )),
-                Infrastructure,
-            ));
+            /*
+                commands().spawn((
+                    Sprite::new("tilemap".to_string(), vec2(1.0, 1.0), Z_TERRAIN, WHITE).with_rect(
+                        tile.src[0],
+                        tile.src[1],
+                        GRIDSIZE,
+                        GRIDSIZE,
+                    ),
+                    Transform::position(vec2(
+                        tile.px[0] / GRIDSIZE as f32,
+                        -tile.px[1] / GRIDSIZE as f32,
+                    )),
+                    Infrastructure,
+                ));
+            */ // TODO
         }
     }
 
@@ -241,30 +295,35 @@ fn setup(s: &mut GameWrapper, c: &mut EngineContext) {
             has_moved: false,
         });
     }
+
+    Ok(())
 }
 
-fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
+fn update(s: &mut GameWrapper) {
     let co = &mut s.cosync;
     let s = &mut s.game_state;
     co.run_until_stall(s);
-    clear_background(TEAL);
+    //clear_background(TEAL); // TODO
     let mut visuals = egui::Visuals::dark();
     visuals.window_shadow = epaint::Shadow {
-        extrusion: 0.,
         color: epaint::Color32::BLACK,
+        offset: egui::Vec2::new(0., 0.),
+        blur: 0.,
+        spread: 0.,
     };
     egui().set_visuals(visuals);
 
     if is_key_pressed(KeyCode::F5) {
-	println!("Saving game.");
+        println!("Saving game.");
     }
     if is_key_pressed(KeyCode::F9) {
-	println!("Loading game.");
+        println!("Loading game.");
     }
 
     let c_x = tweak!(6.);
     let c_y = tweak!(-7.);
-    main_camera_mut().center = Vec2::new(c_x, c_y);
+    // TODO
+    //main_camera_mut().center = Vec2::new(c_x, c_y);
 
     draw_game(s);
 
@@ -277,20 +336,23 @@ fn update(s: &mut GameWrapper, _c: &mut EngineContext) {
 fn draw_game(s: &mut GameState) {
     // draw actors
     for (_index, actor) in s.entities.iter() {
-        draw_sprite_ex(
-            texture_id("tilemap"),
-            actor.draw_pos,
-            if actor.has_moved { GRAY } else { WHITE },
-            Z_UNIT,
-            DrawTextureParams {
-                dest_size: Some(vec2(1.0, 1.0).as_world_size()),
-                source_rect: Some(IRect {
-                    offset: actor.sprite_coords,
-                    size: ivec2(GRIDSIZE, GRIDSIZE),
-                }),
-                ..Default::default()
-            },
-        );
+        /*
+            draw_sprite_ex(
+                texture_id("tilemap"),
+                actor.draw_pos,
+                if actor.has_moved { GRAY } else { WHITE },
+                Z_UNIT,
+                DrawTextureParams {
+                    dest_size: Some(vec2(1.0, 1.0).as_world_size()),
+                    source_rect: Some(IRect {
+                        offset: actor.sprite_coords,
+                        size: ivec2(GRIDSIZE, GRIDSIZE),
+                    }),
+                    ..Default::default()
+                },
+            );
+        */
+        // TODO
 
         if actor.hp < 10 {
             let sprite = match actor.hp {
@@ -341,24 +403,26 @@ fn handle_input(s: &mut GameState) {
     if let Some(wpos) = s.ui.right_click_menu_pos {
         draw_cursor(s, wpos);
         let pos = world_to_screen(wpos);
-        egui::Area::new("context_menu")
+        egui::Area::new(egui::Id::new("context_menu"))
             .fixed_pos(egui::pos2(pos.x, pos.y))
-            .show(egui(), |ui| {
+            .show(&egui(), |ui| {
                 egui::Frame::none()
                     .fill(egui::Color32::BLACK)
                     .show(ui, |ui| {
                         for (name, sprite) in s.sprites.iter().sorted_by_key(|s| s.0) {
                             if ui.button(name).clicked() {
-                                commands().spawn((
-                                    Transform::position(grid_world_pos(wpos)),
-                                    Sprite::new(
-                                        "tilemap".to_string(),
-                                        vec2(1.0, 1.0),
-                                        Z_UNIT,
-                                        WHITE,
-                                    )
-                                    .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
-                                ));
+                                /*
+                                                commands().spawn((
+                                                    Transform::position(grid_world_pos(wpos)),
+                                                    Sprite::new(
+                                                        "tilemap".to_string(),
+                                                        vec2(1.0, 1.0),
+                                                        Z_UNIT,
+                                                        WHITE,
+                                                    )
+                                                    .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
+                                                ));
+                                */ // TODO
                             }
                         }
                     });
@@ -446,9 +510,9 @@ fn handle_input(s: &mut GameState) {
         }
         if s.ui.move_state == MoveState::Confirm {
             let pos = world_to_screen(s.entities[e].draw_pos);
-            egui::Area::new("move confirmation")
+            egui::Area::new(egui::Id::new("move confirmation"))
                 .fixed_pos(egui::pos2(pos.x, pos.y))
-                .show(egui(), |ui| {
+                .show(&egui(), |ui| {
                     egui::Frame::none()
                         .fill(egui::Color32::BLACK)
                         .show(ui, |ui| {
@@ -474,12 +538,15 @@ fn handle_input(s: &mut GameState) {
             let chosen = s.ui.chosen_enemy.unwrap_or(0);
             let enemy = enemies[chosen];
             draw_cursor(s, game_to_world(enemy.1));
-            draw_text(
-                &format!("enemies: {}", enemies.len()),
-                vec2(0., 0.),
-                WHITE,
-                TextAlign::Center,
-            );
+            /*
+                draw_text(
+                    &format!("enemies: {}", enemies.len()),
+                    vec2(0., 0.),
+                    WHITE,
+                    TextAlign::Center,
+                );
+            */
+            // TODO
             if is_key_pressed(KeyCode::Escape) {
                 // TODO revert one step instead
                 s.ui.move_state = MoveState::None;
@@ -645,7 +712,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
 /// debug information and keybindings
 /// also does drawing in immediate mode
 fn handle_debug_input(s: &mut GameState) {
-    egui::Window::new("kf_debug_info").show(egui(), |ui| {
+    egui::Window::new("kf_debug_info").show(&egui(), |ui| {
         let pos = grid_world_pos(mouse_world());
         ui.label(format!("mouse world grid pos: {}", pos));
         let pos = ivec2(pos.x as _, -pos.y as _);
@@ -695,21 +762,9 @@ fn draw_cursor(s: &GameState, pos: Vec2) {
 }
 
 /// comfy wars specific helper for drawing sprites
-fn cw_draw_sprite(s: &GameState, name: &str, pos: Vec2, z: i32) {
-    draw_sprite_ex(
-        texture_id("tilemap"),
-        pos,
-        WHITE,
-        z,
-        DrawTextureParams {
-            dest_size: Some(vec2(1.0, 1.0).as_world_size()),
-            source_rect: Some(IRect {
-                offset: ivec2(s.sprites[name].x, s.sprites[name].y),
-                size: ivec2(GRIDSIZE, GRIDSIZE),
-            }),
-            ..Default::default()
-        },
-    );
+fn cw_draw_sprite(s: &GameState, name: &str, dp: Vec2, _z: i32) {
+    let sprite = &s.sprites[name];
+    draw_texture_ex(&sprite.texture, dp.x, dp.y, WHITE, sprite.params.clone());
 }
 
 fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
@@ -806,7 +861,7 @@ fn grid_pos(v: Vec2) -> IVec2 {
     r
 }
 
-fn word_to_game(v: Vec2) -> IVec2 {
+fn world_to_game(v: Vec2) -> IVec2 {
     let v = grid_world_pos(v);
     ivec2(v.x as _, -v.y as _)
 }
@@ -816,25 +871,29 @@ fn game_to_world(v: IVec2) -> Vec2 {
 }
 
 fn mouse_game_grid() -> IVec2 {
-    word_to_game(mouse_world())
+    world_to_game(mouse_world())
 }
 
 fn draw_dijkstra_map(grid: &Grid<i32>) {
     for (x, y, val) in grid.iter() {
         let pos = vec2(x as _, -y as _);
-        draw_rect(
-            pos,
-            vec2(1., 1.),
-            Color {
-                r: 0.1,
-                g: 0.1,
-                b: 0.1,
-                a: 0.5,
-            },
-            50,
-        );
+        /*
+            draw_rect(
+                pos,
+                vec2(1., 1.),
+                Color {
+                    r: 0.1,
+                    g: 0.1,
+                    b: 0.1,
+                    a: 0.5,
+                },
+                50,
+            );
+        */
+        // TODO
         if *val > 0 {
-            draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+            //draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
+            // TODO
         }
     }
 }

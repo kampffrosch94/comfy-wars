@@ -1,3 +1,4 @@
+
 # confirmed to work on nixos with wayland (sway)
 # use with `nix develop`
 # then run `cargo run --example music -F winit/wayland`
@@ -9,29 +10,36 @@
     };
     nixpkgs.url = "nixpkgs/nixos-unstable";
   };
-  outputs = { nixpkgs, fenix, ... }:
+  outputs =
+    { nixpkgs, fenix, ... }:
     let
-      forAllSystems = function:
+      forAllSystems =
+        function:
         # insert more systems here
-        nixpkgs.lib.genAttrs [ "x86_64-linux" ] (system:
-          function (import nixpkgs {
-            inherit system;
-            overlays = [ fenix.overlays.default ];
-          }));
+        nixpkgs.lib.genAttrs [ "x86_64-linux" ] (
+          system:
+          function (
+            import nixpkgs {
+              inherit system;
+              overlays = [ fenix.overlays.default ];
+            }
+          )
+        );
 
-    in {
+    in
+    {
       devShells = forAllSystems (pkgs: {
-        default = (pkgs.mkShell.override {
-          stdenv = pkgs.useMoldLinker pkgs.clangStdenv;
-        }) {
+        default = (pkgs.mkShell.override { stdenv = pkgs.useMoldLinker pkgs.clangStdenv; }) {
           packages = with pkgs; [
             # rust stuff
-            (pkgs.fenix.complete.withComponents [
-              "cargo"
-              "clippy"
-              "rust-src"
-              "rustc"
-              "rustfmt"
+            (with pkgs.fenix; with stable; combine [
+              cargo
+              clippy
+              rust-src
+              rustc
+              rustfmt
+              targets.wasm32-unknown-unknown.stable.rust-std
+              targets.wasm32-unknown-emscripten.stable.rust-std
             ])
             clang
             mold
@@ -53,6 +61,8 @@
             xorg.libXi
             xorg.libXrandr
 
+            # gl
+            libGL
 
             # extra tooling
             tracy # profiler, call with ~Tracy~
@@ -62,14 +72,16 @@
             cargo-watch
           ];
           # stuff we need to run
-          LD_LIBRARY_PATH = with pkgs;
+          LD_LIBRARY_PATH =
+            with pkgs;
             lib.makeLibraryPath [
               alsaLib # sound
-              vulkan-loader
+              libGL
               libxkbcommon # keyboard
               xorg.libX11
               xorg.libXi 
             ];
+          env.LIBCLANG_PATH = "${pkgs.llvmPackages.clang-unwrapped.lib}/lib/libclang.so";
         };
       });
     };

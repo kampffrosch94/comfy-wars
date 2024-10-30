@@ -1,6 +1,6 @@
+use crate::util::*;
 /// some gameplay functions
 use crate::*;
-use crate::util::*;
 
 pub const ENEMY_TEAM: Team = Team::Red;
 pub const PLAYER_TEAM: Team = Team::Blue;
