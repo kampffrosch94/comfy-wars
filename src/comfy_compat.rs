@@ -57,7 +57,6 @@ pub use comfy::span;
 pub use comfy::timing_start;
 
 // Inline Tweak
-pub use comfy::inline_tweak;
-pub use comfy::tweak;
+pub use inline_tweak::tweak;
 
 
