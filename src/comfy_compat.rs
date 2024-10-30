@@ -41,9 +41,6 @@ pub use comfy::is_key_pressed;
 pub use comfy::is_mouse_button_released;
 pub use comfy::is_mouse_button_pressed;
 
-// stdlib?
-pub use comfy::Lazy;
-
 // Egui
 pub use comfy::egui;
 pub use comfy::epaint;
