@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Index, IndexMut, Mul};
-use comfy::*;
+use crate::comfy_compat::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Grid<T> {
@@ -409,19 +409,6 @@ impl<T: Clone> IndexMut<IVec2> for Grid<T> {
     }
 }
 
-impl<T: Clone> Index<UVec2> for Grid<T> {
-    type Output = T;
-
-    fn index(&self, index: UVec2) -> &Self::Output {
-        &self[(index.x as i32, index.y as i32)]
-    }
-}
-
-impl<T: Clone> IndexMut<UVec2> for Grid<T> {
-    fn index_mut(&mut self, index: UVec2) -> &mut Self::Output {
-        &mut self[(index.x as i32, index.y as i32)]
-    }
-}
 
 #[test]
 fn test_stuff() {
@@ -429,7 +416,6 @@ fn test_stuff() {
     grid[(0, 1)] = 5;
 
     assert_eq!(grid[IVec2::new(1, 0)], 0);
-    assert_eq!(grid[UVec2::new(0, 1)], 5);
 
     assert_eq!(
         grid.into_iter_values().collect::<Vec<_>>(),
@@ -444,8 +430,6 @@ fn readme_test() {
 
     // Accessing using IVec2.
     assert_eq!(grid[IVec2::new(1, 0)], 0);
-    // Accessing using UVec2.
-    assert_eq!(grid[UVec2::new(0, 1)], 5);
 
     // Converting grid to a Vec.
     assert_eq!(

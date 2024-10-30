@@ -6,8 +6,10 @@ mod game;
 mod loading;
 mod util;
 mod grids;
+mod comfy_compat;
 
-use comfy::*;
+use std::collections::{HashMap, HashSet};
+
 use cosync::{Cosync, CosyncInput, CosyncQueueHandle};
 use data::*;
 use debug::*;
@@ -18,6 +20,7 @@ use loading::*;
 use nanoserde::*;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
+use comfy_compat::*;
 
 simple_game!("comfy wars", GameWrapper, setup, update);
 

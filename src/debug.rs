@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use comfy::*;
+use crate::comfy_compat::*;
 
 static DEBUG_LINES: Lazy<AtomicRefCell<Vec<String>>> =
     Lazy::new(|| AtomicRefCell::new(Default::default()));

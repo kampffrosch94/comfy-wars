@@ -1,4 +1,4 @@
-use comfy::*;
+use crate::comfy_compat::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
