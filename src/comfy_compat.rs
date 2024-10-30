@@ -60,6 +60,4 @@ pub use comfy::timing_start;
 pub use comfy::inline_tweak;
 pub use comfy::tweak;
 
-// Itertools
-pub use comfy::Itertools;
 

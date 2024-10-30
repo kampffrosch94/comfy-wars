@@ -16,6 +16,7 @@ use debug::*;
 use dijkstra::*;
 use game::*;
 use grids::*;
+use itertools::Itertools;
 use loading::*;
 use nanoserde::*;
 use serde::{Deserialize, Serialize};

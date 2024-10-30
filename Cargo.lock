@@ -552,6 +552,7 @@ version = "0.1.0"
 dependencies = [
  "comfy",
  "cosync",
+ "itertools 0.13.0",
  "nanoserde",
  "serde",
  "serde_json",

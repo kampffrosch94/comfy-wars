@@ -1,5 +1,6 @@
-use crate::comfy_compat::{ivec2, IVec2, Itertools};
+use crate::comfy_compat::{ivec2, IVec2};
 use crate::grids::Grid;
+use itertools::Itertools;
 
 pub fn get_neighbors<T>(pos: IVec2, grid: &Grid<T>) -> Vec<IVec2> {
     let x = pos.x;
