@@ -152,8 +152,9 @@ enum GamePhase {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct UIState {
-    #[serde(skip)]
+    #[serde(skip)] // TODO proxy
     right_click_menu_pos: Option<Vec2>,
+    cursor_pos: Option<Vec2f>,
     last_mouse_pos: Vec2f,
     draw_dijkstra_map: bool,
     draw_ai_map: bool,
@@ -318,7 +319,10 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
         };
         s.sprites.insert(
             name.clone(),
-            Sprite {params, texture: texture.clone()},
+            Sprite {
+                params,
+                texture: texture.clone(),
+            },
         );
     }
 
@@ -361,21 +365,27 @@ fn update(s: &mut GameWrapper) {
     }
 
     s.camera.process();
-    draw_game(s);
-
+    draw_tiles(s);
     if s.phase == GamePhase::PlayerPhase {
         handle_input(s);
     }
     handle_debug_input(s);
+    draw_actors(s);
+
+    if let Some(pos) = s.ui.cursor_pos.take() {
+        draw_cursor(s, pos.into());
+    } 
 }
 
-fn draw_game(s: &mut GameState) {
+fn draw_tiles(s: &mut GameState) {
     // draw tilemap
     for sprite in s.ground_sprites.iter().chain(s.terrain_sprites.iter()) {
         let (x, y) = sprite.pos.into();
         draw_texture_ex(&sprite.texture, x, y, WHITE, sprite.params.clone())
     }
+}
 
+fn draw_actors(s: &mut GameState) {
     // draw actors
     for (_index, actor) in s.entities.iter() {
         let color = if actor.has_moved { GRAY } else { WHITE };
@@ -461,7 +471,7 @@ fn handle_input(s: &mut GameState) {
     }
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
-        draw_cursor(s, wpos);
+	s.ui.cursor_pos = Some(wpos.into());
         let pos = s.camera.world_to_screen(wpos);
         egui::Area::new(egui::Id::new("context_menu"))
             .fixed_pos(egui::pos2(pos.x, pos.y))
@@ -482,7 +492,7 @@ fn handle_input(s: &mut GameState) {
                                                     )
                                                     .with_rect(sprite.x, sprite.y, GRIDSIZE, GRIDSIZE),
                                                 ));
-                                */ // TODO
+                                */ // TODO new right click menu
                             }
                         }
                     });
@@ -493,7 +503,7 @@ fn handle_input(s: &mut GameState) {
         if s.ui.move_state == MoveState::None {
             let pos = s.entities[e].draw_pos;
             let team = s.entities[e].team;
-            draw_cursor(s, pos);
+            
 
             let start_pos = grid_pos(pos);
             // handle move range
@@ -528,13 +538,13 @@ fn handle_input(s: &mut GameState) {
             for (_, actor) in s.entities.iter().filter(|(_i, a)| a.team != team) {
                 grid[actor.pos] = -99;
             }
-            draw_dijkstra_map(&grid);
 
             // finally actually calculate and draw the path
             let path = dijkstra_path(&grid, start_pos);
+            draw_move_range(s, &grid);
             draw_move_path(s, &path);
 
-            draw_move_range(s, &grid);
+            //draw_dijkstra_map(&grid);
             if s.ui.draw_dijkstra_map {
                 draw_dijkstra_map(&grid);
             }
@@ -567,6 +577,7 @@ fn handle_input(s: &mut GameState) {
                 // stand on the spot and attack or wait
                 s.ui.move_state = MoveState::Confirm;
             }
+	    s.ui.cursor_pos = Some(pos.into());
         }
         if s.ui.move_state == MoveState::Confirm {
             let pos = s.camera.world_to_screen(s.entities[e].draw_pos);
@@ -597,7 +608,7 @@ fn handle_input(s: &mut GameState) {
             let enemies = enemies_in_range(s, e);
             let chosen = s.ui.chosen_enemy.unwrap_or(0);
             let enemy = enemies[chosen];
-            draw_cursor(s, game_to_world(enemy.1));
+            
             /*
                 draw_text(
                     &format!("enemies: {}", enemies.len()),
@@ -628,9 +639,10 @@ fn handle_input(s: &mut GameState) {
                     s.ui.move_state = MoveState::None;
                 });
             }
+	    s.ui.cursor_pos = Some(game_to_world(enemy.1).into());
         }
     } else {
-        draw_cursor(s, s.camera.mouse_world())
+	s.ui.cursor_pos = Some(s.camera.mouse_world().into());
     }
 }
 
@@ -711,7 +723,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             {
                 let s = &mut s.get();
                 draw_move_range(s, &move_range);
-                draw_cursor(s, cursor);
+		s.ui.cursor_pos = Some(cursor.into());
                 draw_move_path(s, &path);
                 draw_dijkstra_map(&_grid);
             }
@@ -745,7 +757,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 cosync::sleep_ticks(1).await;
                 let s = &mut s.get();
                 if let Some((_enemy, pos)) = enemies_in_range(s, index).first() {
-                    draw_cursor(s, game_to_world(*pos));
+		    s.ui.cursor_pos = Some(game_to_world(*pos).into());
                 }
             }
 
@@ -830,8 +842,8 @@ fn cw_draw_sprite(s: &GameState, name: &str, dp: Vec2, _z: i32, color: Color) {
 fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
     for (x, y, v) in grid.iter() {
         if *v > 0 {
-            let mut pos = ivec2(x, y).as_vec2();
-            pos.y *= -1.;
+            let pos = ivec2(x, y);
+            let pos = game_to_world(pos);
             cw_draw_sprite(s, "move_range", pos, Z_MOVE_HIGHLIGHT, WHITE);
         }
     }
@@ -908,6 +920,7 @@ fn movement_cost<'a>(s: &'a GameState, team: Team) -> impl Fn(IVec2) -> i32 + 'a
     cost_function
 }
 
+/// rounds pos to align with grid 
 fn grid_world_pos(v: Vec2) -> Vec2 {
     let mut pos = grid_pos(v);
     pos.x *= GRIDSIZE;
@@ -941,24 +954,22 @@ fn mouse_game_grid(s: &GameState) -> IVec2 {
 
 fn draw_dijkstra_map(grid: &Grid<i32>) {
     for (x, y, val) in grid.iter() {
-        let pos = vec2(x as _, -y as _);
-        /*
-            draw_rect(
-                pos,
-                vec2(1., 1.),
-                Color {
-                    r: 0.1,
-                    g: 0.1,
-                    b: 0.1,
-                    a: 0.5,
-                },
-                50,
-            );
-        */
+        let color = Color {
+            r: 0.1,
+            g: 0.1,
+            b: 0.1,
+            a: 0.5,
+        };
+        let pos = game_to_world(ivec2(x, y));
+        draw_rectangle(pos.x, pos.y, GRIDSIZE as f32, GRIDSIZE as f32, color);
         // TODO
         if *val > 0 {
-            //draw_text(&val.to_string(), pos, WHITE, TextAlign::Center);
-            // TODO
+            let params = TextParams {
+		font_size: 28 * 2,
+		font_scale: 1.0 / 4.,
+		..Default::default()
+	    };
+            draw_text_ex(&val.to_string(), pos.x, pos.y + GRIDSIZE as f32, params);
         }
     }
 }
