@@ -45,6 +45,7 @@ fn window_conf() -> Conf {
 async fn main() {
     let game_wrapper = &mut GameWrapper::new();
     setup(game_wrapper).await.unwrap();
+    game_wrapper.game_state.camera.zoom(1);
     loop {
         clear_background(BLACK);
 
@@ -349,6 +350,7 @@ fn update(s: &mut GameWrapper) {
     // TODO
     //main_camera_mut().center = Vec2::new(c_x, c_y);
 
+    s.camera.process();
     draw_game(s);
 
     if s.phase == GamePhase::PlayerPhase {
