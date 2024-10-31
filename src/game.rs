@@ -17,6 +17,7 @@ pub struct Actor {
     pub unit_type: UnitType,
     pub hp: i32,
     pub has_moved: bool,
+    pub sprite_name: String,
 }
 
 pub const HP_MAX: i32 = 10;

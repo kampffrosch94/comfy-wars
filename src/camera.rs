@@ -112,6 +112,6 @@ impl CameraWrapper {
 
     pub fn mouse_world(&self) -> Vec2 {
         let pos = mouse_position();
-	self.screen_to_world(pos).into()
+        self.screen_to_world(pos).into()
     }
 }

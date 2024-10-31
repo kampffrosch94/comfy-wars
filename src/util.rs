@@ -20,7 +20,21 @@ pub struct IVec2Proxy {
 
 // needed because orphan rules are annoying
 #[derive(
-    Clone, Copy, Debug, Add, Sub, Mul, Div, From, AddAssign, SubAssign, MulAssign, DivAssign,
+    Default,
+    Clone,
+    Copy,
+    Debug,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    From,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
+    Deserialize,
+    Serialize,
 )]
 pub struct Vec2f {
     pub x: f32,

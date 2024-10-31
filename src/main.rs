@@ -31,6 +31,7 @@ use macroquad::prelude::*;
 use nanoserde::*;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
+use util::Vec2f;
 
 fn window_conf() -> Conf {
     Conf {
@@ -107,8 +108,6 @@ pub struct GameState {
     #[serde(skip)]
     sprites: HashMap<String, Sprite>,
     #[serde(skip)]
-    entity_defs: HashMap<String, EntityDef>,
-    #[serde(skip)]
     ground_sprites: Vec<SpriteWithPos>,
     #[serde(skip)]
     terrain_sprites: Vec<SpriteWithPos>,
@@ -133,7 +132,6 @@ impl GameState {
         Self {
             ui: Default::default(),
             sprites: Default::default(),
-            entity_defs: Default::default(),
             grids: Default::default(),
             co,
             entities: Default::default(),
@@ -156,12 +154,11 @@ enum GamePhase {
 struct UIState {
     #[serde(skip)]
     right_click_menu_pos: Option<Vec2>,
+    last_mouse_pos: Vec2f,
     draw_dijkstra_map: bool,
     draw_ai_map: bool,
-    #[serde(skip)]
     selected_entity: Option<ActorKey>,
     move_state: MoveState,
-    #[serde(skip)]
     chosen_enemy: Option<usize>,
 }
 
@@ -233,12 +230,12 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
     }
 
     // load entity definitions
-    let ed = kf_include_str!("/assets/entities_def.json");
-    s.entity_defs = DeJson::deserialize_json(ed).unwrap();
+    let entity_defs: HashMap<String, EntityDef> =
+        DeJson::deserialize_json(kf_include_str!("/assets/entities_def.json")).unwrap();
 
     // load entities on map
-    let ed = kf_include_str!("/assets/entities_map.json");
-    let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(ed).unwrap();
+    let em = kf_include_str!("/assets/entities_map.json");
+    let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(em).unwrap();
 
     for layer in ldtk
         .levels
@@ -308,12 +305,31 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
             .collect_vec();
     }
 
+    for (name, def) in &entity_defs {
+        let source_rect = Rect {
+            x: def.sprite.x as _,
+            y: def.sprite.y as _,
+            w: GRIDSIZE as _,
+            h: GRIDSIZE as _,
+        };
+        let params = DrawTextureParams {
+            source: Some(source_rect),
+            ..Default::default()
+        };
+        s.sprites.insert(
+            name.clone(),
+            Sprite {params, texture: texture.clone()},
+        );
+    }
+
     for me in map_entities {
-        let def = &s.entity_defs[&me.def];
+        let name = &me.def;
+        let def = &entity_defs[&me.def];
         s.entities.insert(Actor {
             pos: me.pos.into(),
-            draw_pos: vec2(me.pos[0] as f32, -me.pos[1] as f32),
+            draw_pos: vec2((me.pos[0] * GRIDSIZE) as f32, (me.pos[1] * GRIDSIZE) as f32),
             sprite_coords: ivec2(def.sprite.x, def.sprite.y),
+            sprite_name: name.clone(),
             team: def.team,
             unit_type: def.unit_type,
             hp: HP_MAX,
@@ -328,7 +344,6 @@ fn update(s: &mut GameWrapper) {
     let co = &mut s.cosync;
     let s = &mut s.game_state;
     co.run_until_stall(s);
-    //clear_background(TEAL); // TODO
     let mut visuals = egui::Visuals::dark();
     visuals.window_shadow = epaint::Shadow {
         color: epaint::Color32::BLACK,
@@ -344,11 +359,6 @@ fn update(s: &mut GameWrapper) {
     if is_key_pressed(KeyCode::F9) {
         println!("Loading game.");
     }
-
-    let c_x = tweak!(6.);
-    let c_y = tweak!(-7.);
-    // TODO
-    //main_camera_mut().center = Vec2::new(c_x, c_y);
 
     s.camera.process();
     draw_game(s);
@@ -368,23 +378,8 @@ fn draw_game(s: &mut GameState) {
 
     // draw actors
     for (_index, actor) in s.entities.iter() {
-        /*
-            draw_sprite_ex(
-                texture_id("tilemap"),
-                actor.draw_pos,
-                if actor.has_moved { GRAY } else { WHITE },
-                Z_UNIT,
-                DrawTextureParams {
-                    dest_size: Some(vec2(1.0, 1.0).as_world_size()),
-                    source_rect: Some(IRect {
-                        offset: actor.sprite_coords,
-                        size: ivec2(GRIDSIZE, GRIDSIZE),
-                    }),
-                    ..Default::default()
-                },
-            );
-        */
-        // TODO
+        let color = if actor.has_moved { GRAY } else { WHITE };
+        cw_draw_sprite(s, &actor.sprite_name, actor.draw_pos, Z_UNIT_HP, color);
 
         if actor.hp < 10 {
             let sprite = match actor.hp {
@@ -400,7 +395,7 @@ fn draw_game(s: &mut GameState) {
                 9 => "hp_9",
                 _ => "hp_question",
             };
-            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP)
+            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP, WHITE);
         }
     }
 }
@@ -408,6 +403,39 @@ fn draw_game(s: &mut GameState) {
 /// relevant for the actual game
 /// also does drawing in immediate mode
 fn handle_input(s: &mut GameState) {
+    if is_mouse_button_down(MouseButton::Middle) {
+        s.camera.mouse_delta(s.ui.last_mouse_pos, mouse_position());
+    }
+
+    s.ui.last_mouse_pos = mouse_position().into();
+    match mouse_wheel() {
+        (_x, y) => {
+            if y != 0. {
+                if y > 0. {
+                    s.camera.zoom(1);
+                }
+                if y < 0. {
+                    s.camera.zoom(-1);
+                }
+            }
+        }
+    }
+
+    if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
+        if is_key_pressed(KeyCode::W) {
+            s.camera.move_camera((0., -32.));
+        }
+        if is_key_pressed(KeyCode::S) {
+            s.camera.move_camera((0., 32.));
+        }
+        if is_key_pressed(KeyCode::A) {
+            s.camera.move_camera((-32., 0.));
+        }
+        if is_key_pressed(KeyCode::D) {
+            s.camera.move_camera((32., 0.));
+        }
+    }
+
     if is_mouse_button_released(MouseButton::Right) {
         s.ui.right_click_menu_pos = Some(s.camera.mouse_world());
     }
@@ -790,13 +818,13 @@ fn handle_debug_input(s: &mut GameState) {
 }
 
 fn draw_cursor(s: &GameState, pos: Vec2) {
-    cw_draw_sprite(s, "cursor", grid_world_pos(pos), Z_CURSOR);
+    cw_draw_sprite(s, "cursor", grid_world_pos(pos), Z_CURSOR, WHITE);
 }
 
 /// comfy wars specific helper for drawing sprites
-fn cw_draw_sprite(s: &GameState, name: &str, dp: Vec2, _z: i32) {
+fn cw_draw_sprite(s: &GameState, name: &str, dp: Vec2, _z: i32, color: Color) {
     let sprite = &s.sprites[name];
-    draw_texture_ex(&sprite.texture, dp.x, dp.y, WHITE, sprite.params.clone());
+    draw_texture_ex(&sprite.texture, dp.x, dp.y, color, sprite.params.clone());
 }
 
 fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
@@ -804,7 +832,7 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
         if *v > 0 {
             let mut pos = ivec2(x, y).as_vec2();
             pos.y *= -1.;
-            cw_draw_sprite(s, "move_range", pos, Z_MOVE_HIGHLIGHT);
+            cw_draw_sprite(s, "move_range", pos, Z_MOVE_HIGHLIGHT, WHITE);
         }
     }
 }
@@ -831,7 +859,7 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
                     (UP, LEFT) | (RIGHT, DOWN) => "arrow_ws",
                     _ => panic!("should be impossible"),
                 };
-                cw_draw_sprite(s, sprite, game_to_world(prev), Z_MOVE_ARROW);
+                cw_draw_sprite(s, sprite, game_to_world(prev), Z_MOVE_ARROW, WHITE);
             }
             prev = *pos;
             prev_direction = Some(direction);
@@ -851,7 +879,7 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
             UP => "arrow_n",
             _ => panic!("should be impossible"),
         };
-        cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW);
+        cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW, WHITE);
     }
 }
 
