@@ -45,8 +45,8 @@ jobs:
       - run: tree
       - run: cargo clean
       - run: cargo build --target wasm32-unknown-unknown --release
-      - run: tree
-      - run: cp target/release/wasm32-unknown-unknown/comfy-wars.wasm web/
+      - run: tree target/release/wasm32-unknown-unknown
+      - run: cp target/release/wasm32-unknown-unknown/release/comfy-wars.wasm web/
       - run: cp -r assets web/
       - run: touch ./web/.nojekyll
       - run: tree
