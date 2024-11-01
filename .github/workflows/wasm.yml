@@ -44,7 +44,7 @@ jobs:
       - run: ls
       - run: tree
       - run: cargo clean
-      - run: cargo build --target wasm32-unknown-unknown
+      - run: cargo build --target wasm32-unknown-unknown --release
       - run: tree
       - run: cp target/release/wasm32-unknown-unknown/comfy-wars.wasm web/
       - run: cp -r assets web/
