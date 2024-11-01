@@ -43,7 +43,6 @@ jobs:
           shared-key: wasm-pages
       - run: ls
       - run: tree
-      - run: cargo clean
       - run: cargo build --target wasm32-unknown-unknown --release
       - run: ls target
       - run: cp target/wasm32-unknown-unknown/release/comfy-wars.wasm web/
