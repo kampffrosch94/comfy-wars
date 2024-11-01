@@ -43,8 +43,11 @@ jobs:
           shared-key: wasm-pages
       - run: ls
       - run: tree
+      - run: cargo clean
       - run: cargo build --target wasm32-unknown-unknown
+      - run: tree
       - run: cp target/release/wasm32-unknown-unknown/comfy-wars.wasm web/
+      - run: cp -r assets web/
       - run: touch ./web/.nojekyll
       - run: tree
       - name: Upload artifact
