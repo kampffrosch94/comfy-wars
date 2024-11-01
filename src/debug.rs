@@ -24,6 +24,6 @@ pub fn cw_draw_debug_window() {
 #[allow(unused_macros)]
 macro_rules! cw_debug {
     ($($arg:tt)*) => {
-        cw_debug(format!($($arg)*));
+        crate::cw_debug(format!($($arg)*));
     };
 }

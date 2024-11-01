@@ -46,7 +46,6 @@ fn window_conf() -> Conf {
 async fn main() {
     let game_wrapper = &mut GameWrapper::new();
     setup(game_wrapper).await.unwrap();
-    game_wrapper.game_state.camera.zoom(1);
     loop {
         clear_background(BLACK);
 

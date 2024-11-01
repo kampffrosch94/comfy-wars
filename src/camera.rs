@@ -20,15 +20,16 @@ impl Default for CameraWrapper {
 
 impl CameraWrapper {
     pub fn new() -> Self {
-        let scale_exp = 1;
+        let scale_exp = 3;
         let base2: f32 = 2.;
         let scale = base2.powf(scale_exp as f32);
-        let scale_tween = Tweener::linear(2., 2., 1.);
+        let scale_tween = Tweener::linear(scale, scale, 0.);
 
-        let offset = Vec2f { x: 0., y: 0. };
-        let offset_tween = Tweener::linear(offset, Vec2f { x: 0., y: 0. }, 0.25);
+        let offset = Vec2f { x: -160., y: -40. };
+        let offset_tween = Tweener::linear(offset, offset, 0.00);
 
         let camera = Self::create_camera(scale, offset.into());
+	set_camera(&camera);
         CameraWrapper {
             scale,
             scale_exp,
@@ -61,14 +62,15 @@ impl CameraWrapper {
     pub fn process(&mut self) {
         // handle camera
         let mouse_position = Vec2f::from(mouse_position());
+	let time = get_frame_time();
 
         if !self.offset_tween.is_finished() {
-            self.offset = self.offset_tween.move_by(get_frame_time());
+            self.offset = self.offset_tween.move_by(time);
         }
 
         if !self.scale_tween.is_finished() {
             let point = Vec2f::from(self.camera.screen_to_world(mouse_position.into()));
-            let new_scale = self.scale_tween.move_by(get_frame_time());
+            let new_scale = self.scale_tween.move_by(time);
             let new_camera = Self::create_camera(new_scale, self.offset.into());
             let new_point = Vec2f::from(new_camera.screen_to_world(mouse_position.into()));
             let pan_correction = new_point - point;
@@ -78,6 +80,8 @@ impl CameraWrapper {
 
         self.camera = Self::create_camera(self.scale, self.offset.into());
         self.set();
+	cw_debug!("Camera scale: {} offset: {:?}", self.scale, self.offset);
+	cw_debug!("Camera scale_exp: {}", self.scale_exp);
     }
 
     pub fn zoom(&mut self, delta: i32) {
