@@ -11,6 +11,7 @@ mod grids;
 mod loading;
 mod util;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -38,6 +39,7 @@ fn window_conf() -> Conf {
         window_title: "comfy wars".to_owned(),
         fullscreen: false,
         high_dpi: true,
+        sample_count: 0,
         ..Default::default()
     }
 }
@@ -70,6 +72,7 @@ const Z_MOVE_HIGHLIGHT: i32 = 11;
 const Z_MOVE_ARROW: i32 = 12;
 const Z_UNIT: i32 = 20;
 const Z_UNIT_HP: i32 = 21;
+const Z_DIJKSTRA_DEBUG: i32 = 30;
 const Z_CURSOR: i32 = 100;
 
 pub struct GameWrapper {
@@ -88,6 +91,7 @@ impl GameWrapper {
     }
 }
 
+#[derive(Clone)]
 struct Sprite {
     params: DrawTextureParams,
     texture: Texture2D,
@@ -103,6 +107,8 @@ struct SpriteWithPos {
 pub struct GameState {
     #[serde(skip, default = "null_object_queue_handle")]
     co: CosyncQueueHandle<GameState>,
+    #[serde(skip)]
+    draw_buffer: RefCell<Vec<DrawCommand>>,
     ui: UIState,
     #[serde(skip)]
     sprites: HashMap<String, Sprite>,
@@ -117,6 +123,80 @@ pub struct GameState {
     camera: CameraWrapper,
 }
 
+struct DrawCommand {
+    z_level: i32,
+    command: Box<dyn FnOnce() -> ()>,
+}
+
+impl GameState {
+    fn draw_sprite(&self, name: &str, dp: impl Into<Vec2f>, z_level: i32, color: Color) {
+        let dp = dp.into();
+        let sprite = (&self.sprites[name]).clone();
+        let command = move || {
+            draw_texture_ex(&sprite.texture, dp.x, dp.y, color, sprite.params);
+        };
+        self.draw_buffer.borrow_mut().push(DrawCommand {
+            z_level,
+            command: Box::new(command),
+        });
+    }
+
+    fn draw_texture(
+        &self,
+        texture: Texture2D,
+        dp: impl Into<Vec2f>,
+        z_level: i32,
+        color: Color,
+        params: DrawTextureParams,
+    ) {
+        let dp = dp.into();
+        let command = move || {
+            draw_texture_ex(&texture, dp.x, dp.y, color, params);
+        };
+        self.draw_buffer.borrow_mut().push(DrawCommand {
+            z_level,
+            command: Box::new(command),
+        });
+    }
+
+    fn draw_rect(&self, dp: impl Into<Vec2f>, w: f32, h: f32, z_level: i32, color: Color) {
+        let dp = dp.into();
+        let command = move || {
+            draw_rectangle(dp.x, dp.y, GRIDSIZE as f32, GRIDSIZE as f32, color);
+        };
+        self.draw_buffer.borrow_mut().push(DrawCommand {
+            z_level,
+            command: Box::new(command),
+        });
+    }
+
+    fn draw_text(
+        &self,
+        text: impl Into<String>,
+        dp: impl Into<Vec2f>,
+        z_level: i32,
+        params: TextParams<'static>,
+    ) {
+        let dp = dp.into();
+        let text = text.into();
+        let command = move || {
+            draw_text_ex(&text, dp.x, dp.y, params);
+        };
+        self.draw_buffer.borrow_mut().push(DrawCommand {
+            z_level,
+            command: Box::new(command),
+        });
+    }
+
+    fn flush_draw_buffer(&mut self){
+	let buffer = &mut self.draw_buffer.borrow_mut();
+	buffer.sort_by_key(|it| it.z_level);
+	for draw in buffer.drain(..) {
+	    (draw.command)();
+	}
+    }
+}
+
 new_key_type! {
     struct ActorKey;
 }
@@ -129,6 +209,7 @@ fn null_object_queue_handle() -> CosyncQueueHandle<GameState> {
 impl GameState {
     pub fn new(co: CosyncQueueHandle<GameState>) -> Self {
         Self {
+            draw_buffer: Default::default(),
             ui: Default::default(),
             sprites: Default::default(),
             grids: Default::default(),
@@ -371,16 +452,34 @@ fn update(s: &mut GameWrapper) {
     handle_debug_input(s);
     draw_actors(s);
 
+    // TODO remove this indirection
     if let Some(pos) = s.ui.cursor_pos.take() {
         draw_cursor(s, pos.into());
-    } 
+    }
+
+    s.flush_draw_buffer();
 }
 
 fn draw_tiles(s: &mut GameState) {
-    // draw tilemap
-    for sprite in s.ground_sprites.iter().chain(s.terrain_sprites.iter()) {
-        let (x, y) = sprite.pos.into();
-        draw_texture_ex(&sprite.texture, x, y, WHITE, sprite.params.clone())
+    for sprite in s.ground_sprites.iter() {
+        let pos: Vec2f = sprite.pos.into();
+        s.draw_texture(
+            sprite.texture.clone(),
+            pos,
+            Z_GROUND,
+            WHITE,
+            sprite.params.clone(),
+        )
+    }
+    for sprite in s.terrain_sprites.iter() {
+        let pos: Vec2f = sprite.pos.into();
+        s.draw_texture(
+            sprite.texture.clone(),
+            pos,
+            Z_TERRAIN,
+            WHITE,
+            sprite.params.clone(),
+        )
     }
 }
 
@@ -388,7 +487,7 @@ fn draw_actors(s: &mut GameState) {
     // draw actors
     for (_index, actor) in s.entities.iter() {
         let color = if actor.has_moved { GRAY } else { WHITE };
-        cw_draw_sprite(s, &actor.sprite_name, actor.draw_pos, Z_UNIT_HP, color);
+        s.draw_sprite(&actor.sprite_name, actor.draw_pos, Z_UNIT_HP, color);
 
         if actor.hp < 10 {
             let sprite = match actor.hp {
@@ -404,7 +503,7 @@ fn draw_actors(s: &mut GameState) {
                 9 => "hp_9",
                 _ => "hp_question",
             };
-            cw_draw_sprite(s, sprite, actor.draw_pos, Z_UNIT_HP, WHITE);
+            s.draw_sprite(sprite, actor.draw_pos, Z_UNIT_HP, WHITE);
         }
     }
 }
@@ -470,7 +569,7 @@ fn handle_input(s: &mut GameState) {
     }
 
     if let Some(wpos) = s.ui.right_click_menu_pos {
-	s.ui.cursor_pos = Some(wpos.into());
+        s.ui.cursor_pos = Some(wpos.into());
         let pos = s.camera.world_to_screen(wpos);
         egui::Area::new(egui::Id::new("context_menu"))
             .fixed_pos(egui::pos2(pos.x, pos.y))
@@ -502,7 +601,6 @@ fn handle_input(s: &mut GameState) {
         if s.ui.move_state == MoveState::None {
             let pos = s.entities[e].draw_pos;
             let team = s.entities[e].team;
-            
 
             let start_pos = grid_pos(pos);
             // handle move range
@@ -545,7 +643,7 @@ fn handle_input(s: &mut GameState) {
 
             //draw_dijkstra_map(&grid);
             if s.ui.draw_dijkstra_map {
-                draw_dijkstra_map(&grid);
+                draw_dijkstra_map(s, &grid);
             }
 
             if is_mouse_button_pressed(MouseButton::Left) && path.len() > 0 {
@@ -559,7 +657,7 @@ fn handle_input(s: &mut GameState) {
                             {
                                 let s = &mut s.get();
                                 let drawpos = &mut s.entities[e].draw_pos;
-                                *drawpos = drawpos.lerp(target, lerpiness);
+                                *drawpos = drawpos.lerp(target.into(), lerpiness);
                             }
                             cosync::sleep_ticks(1).await;
                         }
@@ -567,7 +665,7 @@ fn handle_input(s: &mut GameState) {
                     let last = *path.last().unwrap();
                     let target = game_to_world(last);
                     let s = &mut s.get();
-                    s.entities[e].draw_pos = target;
+                    s.entities[e].draw_pos = target.into();
                     s.entities[e].pos = last;
                     s.ui.move_state = MoveState::Confirm;
                 });
@@ -576,7 +674,7 @@ fn handle_input(s: &mut GameState) {
                 // stand on the spot and attack or wait
                 s.ui.move_state = MoveState::Confirm;
             }
-	    s.ui.cursor_pos = Some(pos.into());
+            s.ui.cursor_pos = Some(pos.into());
         }
         if s.ui.move_state == MoveState::Confirm {
             let pos = s.camera.world_to_screen(s.entities[e].draw_pos);
@@ -607,15 +705,7 @@ fn handle_input(s: &mut GameState) {
             let enemies = enemies_in_range(s, e);
             let chosen = s.ui.chosen_enemy.unwrap_or(0);
             let enemy = enemies[chosen];
-            
-            /*
-                draw_text(
-                    &format!("enemies: {}", enemies.len()),
-                    vec2(0., 0.),
-                    WHITE,
-                    TextAlign::Center,
-                );
-            */
+
             // TODO
             if is_key_pressed(KeyCode::Escape) {
                 // TODO revert one step instead
@@ -638,10 +728,10 @@ fn handle_input(s: &mut GameState) {
                     s.ui.move_state = MoveState::None;
                 });
             }
-	    s.ui.cursor_pos = Some(game_to_world(enemy.1).into());
+            s.ui.cursor_pos = Some(game_to_world(enemy.1).into());
         }
     } else {
-	s.ui.cursor_pos = Some(s.camera.mouse_world().into());
+        s.ui.cursor_pos = Some(s.camera.mouse_world().into());
     }
 }
 
@@ -722,9 +812,9 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
             {
                 let s = &mut s.get();
                 draw_move_range(s, &move_range);
-		s.ui.cursor_pos = Some(cursor.into());
+                s.ui.cursor_pos = Some(cursor.into());
                 draw_move_path(s, &path);
-                draw_dijkstra_map(&_grid);
+                draw_dijkstra_map(s, &_grid);
             }
             cosync::sleep_ticks(1).await;
         }
@@ -756,7 +846,7 @@ async fn enemy_phase(mut s: cosync::CosyncInput<GameState>) {
                 cosync::sleep_ticks(1).await;
                 let s = &mut s.get();
                 if let Some((_enemy, pos)) = enemies_in_range(s, index).first() {
-		    s.ui.cursor_pos = Some(game_to_world(*pos).into());
+                    s.ui.cursor_pos = Some(game_to_world(*pos).into());
                 }
             }
 
@@ -829,13 +919,7 @@ fn handle_debug_input(s: &mut GameState) {
 }
 
 fn draw_cursor(s: &GameState, pos: Vec2) {
-    cw_draw_sprite(s, "cursor", grid_world_pos(pos), Z_CURSOR, WHITE);
-}
-
-/// comfy wars specific helper for drawing sprites
-fn cw_draw_sprite(s: &GameState, name: &str, dp: Vec2, _z: i32, color: Color) {
-    let sprite = &s.sprites[name];
-    draw_texture_ex(&sprite.texture, dp.x, dp.y, color, sprite.params.clone());
+    s.draw_sprite("cursor", grid_world_pos(pos), Z_CURSOR, WHITE);
 }
 
 fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
@@ -843,7 +927,7 @@ fn draw_move_range(s: &GameState, grid: &Grid<i32>) {
         if *v > 0 {
             let pos = ivec2(x, y);
             let pos = game_to_world(pos);
-            cw_draw_sprite(s, "move_range", pos, Z_MOVE_HIGHLIGHT, WHITE);
+            s.draw_sprite("move_range", pos, Z_MOVE_HIGHLIGHT, WHITE);
         }
     }
 }
@@ -870,7 +954,7 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
                     (UP, LEFT) | (RIGHT, DOWN) => "arrow_ws",
                     _ => panic!("should be impossible"),
                 };
-                cw_draw_sprite(s, sprite, game_to_world(prev), Z_MOVE_ARROW, WHITE);
+                s.draw_sprite(sprite, game_to_world(prev), Z_MOVE_ARROW, WHITE);
             }
             prev = *pos;
             prev_direction = Some(direction);
@@ -890,7 +974,7 @@ fn draw_move_path(s: &GameState, path: &Vec<IVec2>) {
             UP => "arrow_n",
             _ => panic!("should be impossible"),
         };
-        cw_draw_sprite(s, sprite, game_to_world(pos), Z_MOVE_ARROW, WHITE);
+        s.draw_sprite(sprite, game_to_world(pos), Z_MOVE_ARROW, WHITE);
     }
 }
 
@@ -919,7 +1003,7 @@ fn movement_cost<'a>(s: &'a GameState, team: Team) -> impl Fn(IVec2) -> i32 + 'a
     cost_function
 }
 
-/// rounds pos to align with grid 
+/// rounds pos to align with grid
 fn grid_world_pos(v: Vec2) -> Vec2 {
     let mut pos = grid_pos(v);
     pos.x *= GRIDSIZE;
@@ -944,14 +1028,14 @@ fn world_to_game(v: Vec2) -> IVec2 {
 }
 
 fn game_to_world(v: IVec2) -> Vec2 {
-    vec2((v.x * GRIDSIZE) as f32, (v.y * GRIDSIZE) as f32)
+    vec2((v.x * GRIDSIZE) as f32, (v.y * GRIDSIZE) as f32).into()
 }
 
 fn mouse_game_grid(s: &GameState) -> IVec2 {
     world_to_game(s.camera.mouse_world())
 }
 
-fn draw_dijkstra_map(grid: &Grid<i32>) {
+fn draw_dijkstra_map(s: &GameState, grid: &Grid<i32>) {
     for (x, y, val) in grid.iter() {
         let color = Color {
             r: 0.1,
@@ -964,11 +1048,16 @@ fn draw_dijkstra_map(grid: &Grid<i32>) {
         // TODO
         if *val > 0 {
             let params = TextParams {
-		font_size: 28 * 2,
-		font_scale: 1.0 / 4.,
-		..Default::default()
-	    };
-            draw_text_ex(&val.to_string(), pos.x, pos.y + GRIDSIZE as f32, params);
+                font_size: 28 * 2,
+                font_scale: 1.0 / 4.,
+                ..Default::default()
+            };
+            let pos = Vec2f::from(pos)
+                + Vec2f {
+                    x: 0.,
+                    y: GRIDSIZE as f32,
+                };
+            s.draw_text(val.to_string(), pos, Z_DIJKSTRA_DEBUG, params);
         }
     }
 }

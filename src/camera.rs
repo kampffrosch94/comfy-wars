@@ -29,7 +29,7 @@ impl CameraWrapper {
         let offset_tween = Tweener::linear(offset, offset, 0.00);
 
         let camera = Self::create_camera(scale, offset.into());
-	set_camera(&camera);
+        set_camera(&camera);
         CameraWrapper {
             scale,
             scale_exp,
@@ -62,7 +62,7 @@ impl CameraWrapper {
     pub fn process(&mut self) {
         // handle camera
         let mouse_position = Vec2f::from(mouse_position());
-	let time = get_frame_time();
+        let time = get_frame_time();
 
         if !self.offset_tween.is_finished() {
             self.offset = self.offset_tween.move_by(time);
@@ -80,8 +80,8 @@ impl CameraWrapper {
 
         self.camera = Self::create_camera(self.scale, self.offset.into());
         self.set();
-	cw_debug!("Camera scale: {} offset: {:?}", self.scale, self.offset);
-	cw_debug!("Camera scale_exp: {}", self.scale_exp);
+        cw_debug!("Camera scale: {} offset: {:?}", self.scale, self.offset);
+        cw_debug!("Camera scale_exp: {}", self.scale_exp);
     }
 
     pub fn zoom(&mut self, delta: i32) {
