@@ -41,17 +41,16 @@ jobs:
         with:
           cache-on-failure: true
           shared-key: wasm-pages
-      - run: cargo install --locked trunk
       - run: ls
       - run: tree
-      - run: trunk build --release --public-url replace-with-relative
-      - run: sed -i 's/\/replace-with-relative/./g' dist/index.html
+      - run: cargo build --target wasm32-unknown-unknown
+      - run: cp target/release/wasm32-unknown-unknown/comfy-wars.wasm web/
+      - run: touch ./web/.nojekyll
       - run: tree
-      - run: touch ./dist/.nojekyll
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./dist
+          path: ./web
 
   # Deploy job
   deploy:
