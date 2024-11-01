@@ -11,7 +11,7 @@ edition = "2021"
 macroquad = "0.4.11"
 # egui integration
 egui-miniquad = {git = "https://github.com/kampffrosch94/egui-miniquad", branch = "miniquad_update"}
-egui = "*"
+egui = "0.28"
 
 nanoserde = "0.1.35"
 #grids = "0.2.3"
