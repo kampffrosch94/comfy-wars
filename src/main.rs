@@ -310,13 +310,6 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
         s.sprites.insert(name, sprite);
     }
 
-    // load entity definitions
-    let entity_defs: HashMap<String, EntityDef> =
-        DeJson::deserialize_json(kf_include_str!("/assets/entities_def.json")).unwrap();
-
-    // load entities on map
-    let em = kf_include_str!("/assets/entities_map.json");
-    let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(em).unwrap();
 
     for layer in ldtk
         .levels
@@ -385,6 +378,14 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
             })
             .collect_vec();
     }
+
+    // load entity definitions
+    let entity_defs: HashMap<String, EntityDef> =
+        DeJson::deserialize_json(kf_include_str!("/assets/entities_def.json")).unwrap();
+
+    // load entities on map
+    let em = kf_include_str!("/assets/entities_map.json");
+    let map_entities: Vec<EntityOnMap> = DeJson::deserialize_json(em).unwrap();
 
     for (name, def) in &entity_defs {
         let source_rect = Rect {
@@ -457,6 +458,7 @@ fn update(s: &mut GameWrapper) {
         draw_cursor(s, pos.into());
     }
 
+    cw_debug!("Draw calls buffered: {}", s.draw_buffer.borrow().len());
     s.flush_draw_buffer();
 }
 

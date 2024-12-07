@@ -43,7 +43,7 @@
             ])
             clang
             mold
-            # rust-analyzer-nightly # optional
+            rust-analyzer-nightly # optional
 
             # necessary to build
             pkg-config # locate C dependencies
