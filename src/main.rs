@@ -133,7 +133,13 @@ impl GameState {
         let dp = dp.into();
         let sprite = (&self.sprites[name]).clone();
         let command = move || {
-            draw_texture_ex(&sprite.texture, dp.x, dp.y, color, sprite.params);
+            my_draw_texture(
+                &sprite.texture,
+                dp.x,
+                dp.y,
+                color,
+                sprite.params.source.unwrap(),
+            );
         };
         self.draw_buffer.borrow_mut().push(DrawCommand {
             z_level,
@@ -151,7 +157,7 @@ impl GameState {
     ) {
         let dp = dp.into();
         let command = move || {
-            draw_texture_ex(&texture, dp.x, dp.y, color, params);
+            my_draw_texture(&texture, dp.x, dp.y, color, params.source.unwrap());
         };
         self.draw_buffer.borrow_mut().push(DrawCommand {
             z_level,
@@ -188,12 +194,12 @@ impl GameState {
         });
     }
 
-    fn flush_draw_buffer(&mut self){
-	let buffer = &mut self.draw_buffer.borrow_mut();
-	buffer.sort_by_key(|it| it.z_level);
-	for draw in buffer.drain(..) {
-	    (draw.command)();
-	}
+    fn flush_draw_buffer(&mut self) {
+        let buffer = &mut self.draw_buffer.borrow_mut();
+        buffer.sort_by_key(|it| it.z_level);
+        for draw in buffer.drain(..) {
+            (draw.command)();
+        }
     }
 }
 
@@ -309,7 +315,6 @@ async fn setup(s: &mut GameWrapper) -> Result<()> {
         };
         s.sprites.insert(name, sprite);
     }
-
 
     for layer in ldtk
         .levels
@@ -1105,4 +1110,46 @@ async fn animate_attack(s: &mut CosyncInput<GameState>, e: ActorKey, enemy: (Act
     }
 
     // TODO attack back if still alive
+}
+
+pub fn my_draw_texture(texture: &Texture2D, x: f32, y: f32, color: Color, src: Rect) {
+    let params = DrawTextureParams::default();
+    let context = unsafe { get_internal_gl() };
+
+    let [width, height] = texture.size().to_array();
+
+    let Rect {
+        x: sx,
+        y: sy,
+        w: sw,
+        h: sh,
+    } = src;
+
+    let (w, h) = match params.dest_size {
+        Some(dst) => (dst.x, dst.y),
+        _ => (sw, sh),
+    };
+
+    let p = [
+        vec2(x, y),
+        vec2(x + w, y),
+        vec2(x + w, y + h),
+        vec2(x, y + h),
+    ];
+
+    // offsetting the uv slightly inward solves the problem of seams
+    // it only happened at some dpi in the web build
+    const OFFSET: f32 = 0.001;
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(p[0].x, p[0].y, 0.,  sx      /width +OFFSET,  sy      /height +OFFSET, color),
+        Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/width -OFFSET,  sy      /height +OFFSET, color),
+        Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/width -OFFSET, (sy + sh)/height -OFFSET, color),
+        Vertex::new(p[3].x, p[3].y, 0.,  sx      /width +OFFSET, (sy + sh)/height -OFFSET, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.quad_gl.texture(Some(&texture));
+    context.quad_gl.draw_mode(DrawMode::Triangles);
+    context.quad_gl.geometry(&vertices, &indices);
 }
