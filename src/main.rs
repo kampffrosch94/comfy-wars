@@ -437,9 +437,9 @@ fn update(s: &mut GameWrapper) {
     let mut visuals = egui::Visuals::dark();
     visuals.window_shadow = epaint::Shadow {
         color: epaint::Color32::BLACK,
-        offset: egui::Vec2::new(0., 0.),
-        blur: 0.,
-        spread: 0.,
+        offset: [0, 0],
+        blur: 0,
+        spread: 0,
     };
     egui().set_visuals(visuals);
 

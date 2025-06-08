@@ -8,10 +8,10 @@ edition = "2021"
 [dependencies]
 #comfy = { git = "https://github.com/darthdeus/comfy"}
 
-macroquad = "0.4.11"
+macroquad = "0.4"
 # egui integration
-egui-miniquad = {git = "https://github.com/kampffrosch94/egui-miniquad", branch = "miniquad_update"}
-egui = "0.28"
+egui-miniquad = "0.16"
+egui = "0.31"
 
 nanoserde = "0.1.35"
 #grids = "0.2.3"
@@ -26,6 +26,7 @@ atomic_refcell = "0.1.13"
 anyhow = { version = "1.0.91", features = ["backtrace"] }
 tween = "2.0.3"
 derive_more = { version = "1.0.0", features = ["full"] }
+egui-macroquad = "0.17.3"
 
 [profile.dev]
 opt-level = 1
