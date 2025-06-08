@@ -26,7 +26,6 @@ atomic_refcell = "0.1.13"
 anyhow = { version = "1.0.91", features = ["backtrace"] }
 tween = "2.0.3"
 derive_more = { version = "1.0.0", features = ["full"] }
-egui-macroquad = "0.17.3"
 
 [profile.dev]
 opt-level = 1
